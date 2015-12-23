@@ -6,11 +6,8 @@ import data.opcode.OpcodeType;
 
 public class InstructionImpl implements Instruction {
 
-	public static Instruction parseInstruction(long val) {
-		if (val < 0 ||val >= Const.MAX_WORD) {
-			throw new IllegalArgumentException("instruction value must be a 32bit value, but got: "+val);
-		}
-		String hexStr = Long.toHexString(val);
+	public static Instruction parseInstruction(int intVal) {
+		String hexStr = Integer.toHexString(intVal);
 		
 		Opcode opcode = Opcode.parseOpcode(Integer.parseUnsignedInt(hexStr.substring(0, 1), 16));
 		int dst = Integer.parseUnsignedInt(hexStr.substring(1, 2), 16);
@@ -20,25 +17,27 @@ public class InstructionImpl implements Instruction {
 		
 		switch (opcode.getOpcodeType()) {
 		case EMPTY:
-			return new InstructionEmpty(opcode);
+			return new InstructionEmpty(hexStr, opcode);
 		case R:
-			return new InstructionR(opcode, dst, src0, src1);
+			return new InstructionR(hexStr, opcode, dst, src0, src1);
 		case LD:
-			return new InstructionLD(opcode, dst, imm);
+			return new InstructionLD(hexStr, opcode, dst, imm);
 		case ST:
-			return new InstructionST(opcode, src1, imm);
+			return new InstructionST(hexStr, opcode, src1, imm);
 		default:
 			throw new IllegalArgumentException("unknown opcode: "+opcode);
 		}
 	}
 	
-	Opcode opcode;
-	private Integer dst;
-	private Integer src0;
-	private Integer src1;
-	private Integer imm;
+	protected final String hexStr;
+	protected final Opcode opcode;
+	protected final Integer dst;
+	protected final Integer src0;
+	protected final Integer src1;
+	protected final Integer imm;
 	
-	public InstructionImpl(Opcode opcode, Integer dst, Integer src0, Integer src1, Integer imm) {
+	public InstructionImpl(String hexStr, Opcode opcode, Integer dst, Integer src0, Integer src1, Integer imm) {
+		this.hexStr = hexStr;
 		if (dst!=null && (dst >= Const.MAX_NIBBLE || dst < 0)) {
 			throw new IllegalArgumentException("must be a 4bit number, but got: "+dst);
 		}
@@ -88,11 +87,16 @@ public class InstructionImpl implements Instruction {
 	public String toString() {
 		return this.opcode.name();
 	}
+	
+	@Override
+	public String toHex() {
+		return null;
+	}
 
 	public static class InstructionR extends InstructionImpl {
 
-		public InstructionR(Opcode opcode, Integer dst, Integer src0, Integer src1) {
-			super(opcode, dst, src0, src1, null);
+		public InstructionR(String hexStr, Opcode opcode, Integer dst, Integer src0, Integer src1) {
+			super(hexStr, opcode, dst, src0, src1, null);
 			if (opcode.getOpcodeType() != OpcodeType.R) {
 				throw new IllegalArgumentException("must be called with an R type opcode, but was called with: "+opcode);
 			}
@@ -128,8 +132,8 @@ public class InstructionImpl implements Instruction {
 	
 	public static class InstructionLD extends InstructionImpl {
 
-		public InstructionLD(Opcode opcode, Integer dst, Integer imm) {
-			super(opcode, dst, null, null, imm);
+		public InstructionLD(String hexStr, Opcode opcode, Integer dst, Integer imm) {
+			super(hexStr, opcode, dst, null, null, imm);
 			if (opcode.getOpcodeType() != OpcodeType.LD) {
 				throw new IllegalArgumentException("must be called with an LD type opcode, but was called with: "+opcode);
 			}
@@ -154,8 +158,8 @@ public class InstructionImpl implements Instruction {
 	
 	public static class InstructionST extends InstructionImpl {
 
-		public InstructionST(Opcode opcode, int src1, int imm) {
-			super(opcode, null, null, src1, imm);
+		public InstructionST(String hexStr, Opcode opcode, int src1, int imm) {
+			super(hexStr, opcode, null, null, src1, imm);
 			if (opcode.getOpcodeType() != OpcodeType.ST) {
 				throw new IllegalArgumentException("must be called with an ST type opcode, but was called with: "+opcode);
 			}
@@ -180,8 +184,8 @@ public class InstructionImpl implements Instruction {
 	
 	public static class InstructionEmpty extends InstructionImpl {
 		
-		public InstructionEmpty(Opcode opcode) {
-			super(opcode, null, null, null, null);
+		public InstructionEmpty(String hexStr, Opcode opcode) {
+			super(hexStr, opcode, null, null, null, null);
 			if (opcode.getOpcodeType() != OpcodeType.ST) {
 				throw new IllegalArgumentException("must be called with an ST type opcode, but was called with: "+opcode);
 			}
@@ -209,6 +213,5 @@ public class InstructionImpl implements Instruction {
 		
 		
 	}
-	
-	
+
 }

@@ -9,43 +9,44 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class Memory {
-	long[] rows;
+	int[] rows;
 	
 	public Memory(int numRows, File f) throws IOException {
-		rows = new long[numRows];
+		this.rows = new int[numRows];
 		load(f);
 	}
 	
 	void load(File f) throws IOException {
-		Arrays.fill(rows, 0);
+		Arrays.fill(this.rows, 0);
 		
 		int i=0;
 		try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-			rows[i++] = Long.parseLong(br.readLine(), 16);
+			this.rows[i++] = Integer.parseInt(br.readLine(), 16);
 		}
 	}
 	
 	public void store(File f) throws IOException {
+		f.getParentFile().mkdirs();
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
-			for (int i=0; i<rows.length; i++) {
-				bw.write(Long.toHexString(rows[i]));
+			for (int row: this.rows) {
+				bw.write(Integer.toHexString(row));
 				bw.newLine();
 			}
 		}
 	}
 	
-	public long read(int rowIdx) {
+	public int read(int rowIdx) {
 		if (rowIdx<0 || rowIdx>=this.rows.length) {
 			throw new IllegalArgumentException("memory address overflow: "+rowIdx);
 		}
-		return rows[rowIdx];
+		return this.rows[rowIdx];
 	}
 	
-	public long write(int rowIdx, long data) {
+	public int write(int rowIdx, int data) {
 		if (rowIdx<0 || rowIdx>=this.rows.length) {
 			throw new IllegalArgumentException("memory address overflow: "+rowIdx);
 		}
-		return rows[rowIdx] = data;
+		return this.rows[rowIdx] = data;
 	}
 	
 }

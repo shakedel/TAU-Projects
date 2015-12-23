@@ -1,10 +1,13 @@
 package state;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
 
 import state.CDB.CdbTrans;
-import state.Registers.Register.State;
 
 public class Registers implements Observer {
 	
@@ -30,39 +33,45 @@ public class Registers implements Observer {
 	@Override
 	public void update(Observable arg0, Object arg1) {
 		CdbTrans cdbTrans = (CdbTrans) arg1;
-		for (Register reg: regs) {
-			if (reg.state==State.CDB_ID && reg.getCdbId().equals(cdbTrans.getCdbId())) {
+		for (Register reg: this.regs) {
+			if (reg.state==Registers.State.CDB_ID && reg.getCdbId().equals(cdbTrans.getCdbId())) {
 				reg.set(cdbTrans.getValue());
+			}
+		}
+	}
+	
+	public void store(File f) throws IOException {
+		f.getParentFile().mkdirs();
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+			for (Register reg: this.regs) {
+				bw.write(reg.toString());
+				bw.newLine();
 			}
 		}
 	}
 	
 	
 	public static class Register {
-		public static enum State {
-			VAL, CDB_ID
-		}
-		
-		private State state;
+		private Registers.State state;
 		private Float val = null;
 		private CdbId cdbId = null;
 		
 		private Register(Float val) {
-			state = State.VAL;
+			state = Registers.State.VAL;
 			this.val = val;
 		}
 		
 		public void set(float val) {
-			this.state = State.VAL;
+			this.state = Registers.State.VAL;
 			this.val = val;
 		}
 		
 		public void set(CdbId cdbId) {
-			this.state = State.CDB_ID;
+			this.state = Registers.State.CDB_ID;
 			this.cdbId = cdbId;
 		}
 		
-		public State getState() {
+		public Registers.State getState() {
 			return this.state;
 		}
 		
@@ -74,6 +83,11 @@ public class Registers implements Observer {
 			return this.cdbId;
 		}
 		
+	}
+
+
+	public static enum State {
+		VAL, CDB_ID
 	}
 	
 }

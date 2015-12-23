@@ -3,26 +3,47 @@ package state;
 import java.util.LinkedList;
 import java.util.List;
 
+import mem.Memory;
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl;
 import data.opcode.Opcode;
-import mem.Memory;
 
 public class InstructionQueue {
 	private static final int ISSUES_PER_CYCLE = 2;
 	
-	private List<Instruction> instructions = new LinkedList<Instruction>();
+	private final InstructionStatus instructionStatus;
+	
 	private final ReservationStation addReservationStation;
 	private final ReservationStation mulReservationStation;
+	private final LoadBuffers loadBuffers;
+	private final StoreBuffers storeBuffers;
 	
+	private List<Instruction> instructions = new LinkedList<Instruction>();
+	private AcceptsInstructions voidInsructionTarget = new AcceptsInstructions() {
+		
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+		
+		@Override
+		public boolean acceptInstruction(Instruction instruction) {
+			instructionStatus.add(instruction);
+			return true;
+		}
+	};
 	
-	private InstructionQueue(ReservationStation addReservationStation, ReservationStation mulReservationStation) {
+	private InstructionQueue(InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
+		this.instructionStatus = instructionStatus;
+		
 		this.addReservationStation = addReservationStation;
 		this.mulReservationStation = mulReservationStation;
+		this.loadBuffers = loadBuffers;
+		this.storeBuffers = storeBuffers;
 	}
 	
-	public InstructionQueue(Memory mem, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation) {
-		this(addReservationStation, mulReservationStation);
+	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
+		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers);
 		int addr = initAddr;
 		Instruction inst;
 		do {
@@ -32,8 +53,8 @@ public class InstructionQueue {
 		} while (!inst.getOpcode().equals(Opcode.HALT));
 	}
 	
-	public InstructionQueue(List<Instruction> instructions, ReservationStation addReservationStation, ReservationStation mulReservationStation) {
-		this(addReservationStation, mulReservationStation);
+	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
+		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers);
 		this.instructions = instructions;
 	}
 	
@@ -60,21 +81,15 @@ public class InstructionQueue {
 				target = this.mulReservationStation;
 				break;
 			case LD: 
-				// TODO:
-				throw new IllegalStateException();
-//				break;
+				target = this.loadBuffers;
+				break;
 			case ST:
-				// TODO:
-				throw new IllegalStateException();
-//				break;
+				target = this.storeBuffers;
+				break;
 			case NOP:
-				// TODO:
-				throw new IllegalStateException();
-//				break;
 			case HALT:
-				// TODO:
-				throw new IllegalStateException();
-//				break;
+				target = this.voidInsructionTarget;
+				break;
 			default:
 				throw new IllegalArgumentException("unknown opcode: "+instruction.getOpcode());
 			}
@@ -87,4 +102,5 @@ public class InstructionQueue {
 			}
 		}
 	}
+	
 }

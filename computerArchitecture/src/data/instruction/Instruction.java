@@ -9,4 +9,5 @@ public interface Instruction {
 	Integer getSrc1();
 	Integer getImm();
 	String toString();
+	String toHex();
 }

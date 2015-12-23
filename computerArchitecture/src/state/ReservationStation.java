@@ -5,6 +5,7 @@ import java.util.Observer;
 
 import state.CDB.CdbTrans;
 import state.Registers.Register;
+import sun.awt.util.IdentityLinkedList;
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl.InstructionR;
 
@@ -14,16 +15,21 @@ public class ReservationStation implements AcceptsInstructions {
 	private final InstructionStatus instructionStatus;
 	
 	private Station[] stations;
+	private int numFunctionalUnits;
+	// we tick() the oldest station first
+	private IdentityLinkedList<Station> stationsAge = new IdentityLinkedList<Station>();
 	
-	public ReservationStation(Registers regs, InstructionStatus instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations) {
+	public ReservationStation(Registers regs, InstructionStatus instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
 		
-		stations = new Station[numStations];
+		this.stations = new Station[numStations];
 		for (int i=0; i<stations.length; i++) {
 			Station station = new Station(i, cdbType, delay, cdb);
 			stations[i] = station;
+			this.stationsAge.add(station);
 		}
+		this.numFunctionalUnits = numFunctionalUnits;
 	}
 	
 	@Override
@@ -34,6 +40,10 @@ public class ReservationStation implements AcceptsInstructions {
 			if (station.state == EntryState.IDLE) {
 				station.set(instR);
 				regs.get(instR.getDst()).set(station.cdbId);
+				// update station age
+				this.stationsAge.remove(station);
+				this.stationsAge.push(station);
+				
 				return true;
 			}
 		}
@@ -51,7 +61,7 @@ public class ReservationStation implements AcceptsInstructions {
 	}
 	
 	public void tick() {
-		for (Station station: stations) {
+		for (Station station: this.stationsAge) {
 			station.tick();
 		}
 	}
@@ -73,20 +83,17 @@ public class ReservationStation implements AcceptsInstructions {
 		CdbId Qj = null;
 		CdbId Qk = null;
 		
-		Integer counter;
+		Integer time;
 		
 		public Station(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
 			this.cdb = cdb;
 			this.cdb.addObserver(this);
-			if (delay < 1) {
-				throw new IllegalArgumentException();
-			}
 			this.delay = delay;
 			this.cdbId = new CdbId(cdbType, idx);
 		}
 		
 		public void set(InstructionR inst) {
-			this.counter = delay;
+			this.time = delay;
 			this.inst = inst;
 			
 			Register regJ = regs.get(inst.getSrc0());
@@ -130,11 +137,15 @@ public class ReservationStation implements AcceptsInstructions {
 				}
 				break;
 			case READY:
-				instructionStatus.setExecComp(this.inst);
-				this.state = EntryState.EXECUTING;
+				if (numFunctionalUnits > 0) {
+					numFunctionalUnits--;
+					instructionStatus.setExecComp(this.inst);
+					this.state = EntryState.EXECUTING;
+				}
 				break;
 			case EXECUTING:
-				if (--this.counter == 0) {
+				if (--this.time == 0) {
+					numFunctionalUnits++;
 					cdb.notifyObservers(new CdbTrans(this.cdbId, inst.calc(this.Vj, this.Vk)));
 					instructionStatus.setWriteResult(inst);
 					this.state = EntryState.IDLE;

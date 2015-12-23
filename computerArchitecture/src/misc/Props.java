@@ -73,7 +73,7 @@ public class Props {
 	public int getNumOfAdds() {
 		return numOfAdds;
 	}
-	public int getNumOfMults() {
+	public int getNumOfMuls() {
 		return numOfMuls;
 	}
 	public int getAddDelay() {
@@ -91,10 +91,10 @@ public class Props {
 	public int getNumMulReservations() {
 		return numMulReservations;
 	}
-	public int getNumMemLoadBuffers() {
+	public int getNumLoadBuffers() {
 		return numMemLoadBuffers;
 	}
-	public int getNumMemStoreBuffers() {
+	public int getNumStoreBuffers() {
 		return numMemStoreBuffers;
 	}
 	
