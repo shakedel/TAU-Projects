@@ -1,0 +1,79 @@
+package state;
+
+import java.util.Observable;
+import java.util.Observer;
+
+import state.CDB.CdbTrans;
+import state.Registers.Register.State;
+
+public class Registers implements Observer {
+	
+	private static Register[] initRegisters() {
+		Register[] res = new Register[16];
+		for (int i=0; i<res.length; i++) {
+			res[i] = new Register(new Float(i));
+		}
+		return res;
+	}
+	
+	
+	private Register[] regs = initRegisters();
+	
+	public Registers(CDB cdb) {
+		cdb.addObserver(this);
+	}
+	
+	public Register get(int idx) {
+		return this.regs[idx];
+	}
+	
+	@Override
+	public void update(Observable arg0, Object arg1) {
+		CdbTrans cdbTrans = (CdbTrans) arg1;
+		for (Register reg: regs) {
+			if (reg.state==State.CDB_ID && reg.getCdbId().equals(cdbTrans.getCdbId())) {
+				reg.set(cdbTrans.getValue());
+			}
+		}
+	}
+	
+	
+	public static class Register {
+		public static enum State {
+			VAL, CDB_ID
+		}
+		
+		private State state;
+		private Float val = null;
+		private CdbId cdbId = null;
+		
+		private Register(Float val) {
+			state = State.VAL;
+			this.val = val;
+		}
+		
+		public void set(float val) {
+			this.state = State.VAL;
+			this.val = val;
+		}
+		
+		public void set(CdbId cdbId) {
+			this.state = State.CDB_ID;
+			this.cdbId = cdbId;
+		}
+		
+		public State getState() {
+			return this.state;
+		}
+		
+		public float getVal() {
+			return this.val;
+		}
+		
+		public CdbId getCdbId() {
+			return this.cdbId;
+		}
+		
+	}
+	
+}
