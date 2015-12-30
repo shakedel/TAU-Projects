@@ -3,9 +3,11 @@ package mem;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 public class Memory {
@@ -19,9 +21,13 @@ public class Memory {
 	void load(File f) throws IOException {
 		Arrays.fill(this.rows, 0);
 		
-		int i=0;
-		try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-			this.rows[i++] = Integer.parseInt(br.readLine(), 16);
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), Charset.forName("UTF-8")))) {
+			int i=0;
+			String line;
+			while ((line = br.readLine()) != null) {
+				line = line.trim();
+				this.rows[i++] = Integer.parseInt(line, 16);
+			}
 		}
 	}
 	

@@ -13,15 +13,15 @@ import data.instruction.InstructionImpl.InstructionLD;
 public class StoreBuffers implements AcceptsInstructions {
 
 	private final Memory memory;
-	private final Registers regs;
-	private final InstructionStatus instructionStatus;
+	private final Registers[] regs;
+	private final InstructionStatus[] instructionStatus;
 	
 	private StoreBuffer[] buffers;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
 	private IdentityLinkedList<StoreBuffer> buffersAge = new IdentityLinkedList<StoreBuffer>();
 	
-	public StoreBuffers(Memory memory, Registers regs, InstructionStatus instructionStatus, CDB cdb, int delay, int numBuffers, int numFunctionalUnits) {
+	public StoreBuffers(Memory memory, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, int delay, int numBuffers, int numFunctionalUnits) {
 		this.memory = memory;
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
@@ -42,7 +42,7 @@ public class StoreBuffers implements AcceptsInstructions {
 		for (StoreBuffer buffer: this.buffers) {
 			if (buffer.state == EntryState.IDLE) {
 				buffer.set(instLD);
-				regs.get(instLD.getDst()).set(buffer.cdbId);
+				regs[instLD.getThreadIdx()].get(instLD.getDst()).set(buffer.cdbId);
 				// update station age
 				this.buffersAge.remove(buffer);
 				this.buffersAge.push(buffer);
@@ -97,7 +97,7 @@ public class StoreBuffers implements AcceptsInstructions {
 			this.time = delay;
 			this.inst = inst;
 			
-			Register regK = regs.get(inst.getSrc1());
+			Register regK = regs[inst.getThreadIdx()].get(inst.getSrc1());
 			switch (regK.getState()) {
 			case VAL:
 				this.Vk = regK.getVal();
@@ -111,7 +111,7 @@ public class StoreBuffers implements AcceptsInstructions {
 				throw new IllegalArgumentException("unknown register state: "+regK.getState());
 			}
 			this.state = Qk!=null ? EntryState.WAITING : EntryState.READY;
-			instructionStatus.add(this.inst);
+			instructionStatus[this.inst.getThreadIdx()].add(this.inst);
 		}
 		
 		public void tick() {
@@ -126,7 +126,7 @@ public class StoreBuffers implements AcceptsInstructions {
 			case READY:
 				if (numFunctionalUnits > 0) {
 					numFunctionalUnits--;
-					instructionStatus.setExecComp(this.inst);
+					instructionStatus[this.inst.getThreadIdx()].setExecComp(this.inst);
 					this.state = EntryState.EXECUTING;
 				}
 				break;
@@ -135,7 +135,7 @@ public class StoreBuffers implements AcceptsInstructions {
 					numFunctionalUnits++;
 					int intVal = Float.floatToRawIntBits(this.Vk);
 					memory.write(inst.getImm(), intVal);
-					instructionStatus.setWriteResult(inst);
+					instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
 					this.state = EntryState.IDLE;
 				}
 				break;

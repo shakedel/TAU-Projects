@@ -9,15 +9,15 @@ import data.instruction.InstructionImpl.InstructionLD;
 public class LoadBuffers implements AcceptsInstructions {
 
 	private final Memory memory;
-	private final Registers regs;
-	private final InstructionStatus instructionStatus;
+	private final Registers[] regs;
+	private final InstructionStatus[] instructionStatus;
 	
 	private LoadBuffer[] buffers;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
 	private IdentityLinkedList<LoadBuffer> buffersAge = new IdentityLinkedList<LoadBuffer>();
 	
-	public LoadBuffers(Memory memory, Registers regs, InstructionStatus instructionStatus, CDB cdb, int delay, int numBuffers, int numFunctionalUnits) {
+	public LoadBuffers(Memory memory, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, int delay, int numBuffers, int numFunctionalUnits) {
 		this.memory = memory;
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
@@ -38,7 +38,7 @@ public class LoadBuffers implements AcceptsInstructions {
 		for (LoadBuffer buffer: this.buffers) {
 			if (buffer.state == EntryState.IDLE) {
 				buffer.set(instLD);
-				regs.get(instLD.getDst()).set(buffer.cdbId);
+				regs[instLD.getThreadIdx()].get(instLD.getDst()).set(buffer.cdbId);
 				// update station age
 				this.buffersAge.remove(buffer);
 				this.buffersAge.push(buffer);
@@ -91,7 +91,7 @@ public class LoadBuffers implements AcceptsInstructions {
 			this.inst = inst;
 			
 			this.state = EntryState.READY;
-			instructionStatus.add(this.inst);
+			instructionStatus[this.inst.getThreadIdx()].add(this.inst);
 		}
 		
 		public void tick() {
@@ -101,7 +101,7 @@ public class LoadBuffers implements AcceptsInstructions {
 			case READY:
 				if (numFunctionalUnits > 0) {
 					numFunctionalUnits--;
-					instructionStatus.setExecComp(this.inst);
+					instructionStatus[this.inst.getThreadIdx()].setExecComp(this.inst);
 					this.state = EntryState.EXECUTING;
 				}
 				break;
@@ -112,7 +112,7 @@ public class LoadBuffers implements AcceptsInstructions {
 					float val = Float.intBitsToFloat(intVal);
 					
 					cdb.notifyObservers(new CdbTrans(this.cdbId, val));
-					instructionStatus.setWriteResult(inst);
+					instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
 					this.state = EntryState.IDLE;
 				}
 				break;

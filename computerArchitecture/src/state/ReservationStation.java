@@ -11,15 +11,18 @@ import data.instruction.InstructionImpl.InstructionR;
 
 public class ReservationStation implements AcceptsInstructions {
 
-	private final Registers regs;
-	private final InstructionStatus instructionStatus;
+	private final Registers[] regs;
+	private final InstructionStatus[] instructionStatus;
 	
 	private Station[] stations;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
 	private IdentityLinkedList<Station> stationsAge = new IdentityLinkedList<Station>();
 	
-	public ReservationStation(Registers regs, InstructionStatus instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
+	public ReservationStation(Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
+		if (regs.length != 2) {
+			throw new IllegalArgumentException("expectes 2 register files but got: "+regs.length);
+		}
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
 		
@@ -39,7 +42,7 @@ public class ReservationStation implements AcceptsInstructions {
 		for (Station station: this.stations) {
 			if (station.state == EntryState.IDLE) {
 				station.set(instR);
-				regs.get(instR.getDst()).set(station.cdbId);
+				regs[instR.getThreadIdx()].get(instR.getDst()).set(station.cdbId);
 				// update station age
 				this.stationsAge.remove(station);
 				this.stationsAge.push(station);
@@ -96,7 +99,7 @@ public class ReservationStation implements AcceptsInstructions {
 			this.time = delay;
 			this.inst = inst;
 			
-			Register regJ = regs.get(inst.getSrc0());
+			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc0());
 			switch (regJ.getState()) {
 			case VAL:
 				this.Vj = regJ.getVal();
@@ -110,7 +113,7 @@ public class ReservationStation implements AcceptsInstructions {
 				throw new IllegalArgumentException("unknown register state: "+regJ.getState());
 			}
 			
-			Register regK = regs.get(inst.getSrc1());
+			Register regK = regs[inst.getThreadIdx()].get(inst.getSrc1());
 			switch (regK.getState()) {
 			case VAL:
 				this.Vk = regK.getVal();
@@ -124,7 +127,7 @@ public class ReservationStation implements AcceptsInstructions {
 				throw new IllegalArgumentException("unknown register state: "+regK.getState());
 			}
 			this.state = (Qj!=null || Qk!=null) ? EntryState.WAITING : EntryState.READY;
-			instructionStatus.add(this.inst);
+			instructionStatus[this.inst.getThreadIdx()].add(this.inst);
 		}
 		
 		public void tick() {
@@ -139,7 +142,7 @@ public class ReservationStation implements AcceptsInstructions {
 			case READY:
 				if (numFunctionalUnits > 0) {
 					numFunctionalUnits--;
-					instructionStatus.setExecComp(this.inst);
+					instructionStatus[this.inst.getThreadIdx()].setExecComp(this.inst);
 					this.state = EntryState.EXECUTING;
 				}
 				break;
@@ -147,7 +150,7 @@ public class ReservationStation implements AcceptsInstructions {
 				if (--this.time == 0) {
 					numFunctionalUnits++;
 					cdb.notifyObservers(new CdbTrans(this.cdbId, inst.calc(this.Vj, this.Vk)));
-					instructionStatus.setWriteResult(inst);
+					instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
 					this.state = EntryState.IDLE;
 				}
 				break;

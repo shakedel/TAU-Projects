@@ -33,7 +33,7 @@ public class InstructionQueue {
 		}
 	};
 	
-	private InstructionQueue(InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
+	private InstructionQueue(InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
 		this.instructionStatus = instructionStatus;
 		
 		this.addReservationStation = addReservationStation;
@@ -42,19 +42,19 @@ public class InstructionQueue {
 		this.storeBuffers = storeBuffers;
 	}
 	
-	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
-		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers);
+	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
+		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers, threadIdx);
 		int addr = initAddr;
 		Instruction inst;
 		do {
-			inst = InstructionImpl.parseInstruction(mem.read(addr));
+			inst = InstructionImpl.parseInstruction(mem.read(addr), threadIdx);
 			instructions.add(inst);
 			addr+=2;
 		} while (!inst.getOpcode().equals(Opcode.HALT));
 	}
 	
-	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers) {
-		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers);
+	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
+		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers, threadIdx);
 		this.instructions = instructions;
 	}
 	

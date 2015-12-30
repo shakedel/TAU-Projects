@@ -10,4 +10,5 @@ public interface Instruction {
 	Integer getImm();
 	String toString();
 	String toHex();
+	int getThreadIdx();
 }
