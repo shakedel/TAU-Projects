@@ -8,15 +8,14 @@ import data.instruction.Instruction;
 import data.instruction.InstructionImpl;
 import data.opcode.Opcode;
 
-public class InstructionQueue {
+public class InstructionQueue implements Tickable {
 	private static final int ISSUES_PER_CYCLE = 2;
 	
 	private final InstructionStatus instructionStatus;
 	
 	private final ReservationStation addReservationStation;
 	private final ReservationStation mulReservationStation;
-	private final LoadBuffers loadBuffers;
-	private final StoreBuffers storeBuffers;
+	private final MemoryUnit memoryUnit;
 	
 	private List<Instruction> instructions = new LinkedList<Instruction>();
 	private AcceptsInstructions voidInsructionTarget = new AcceptsInstructions() {
@@ -28,22 +27,25 @@ public class InstructionQueue {
 		
 		@Override
 		public boolean acceptInstruction(Instruction instruction) {
-			instructionStatus.add(instruction);
 			return true;
+		}
+
+		@Override
+		public void tick() {
+			// do nothing
 		}
 	};
 	
-	private InstructionQueue(InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
+	private InstructionQueue(InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, MemoryUnit memoryUnit, int threadIdx) {
 		this.instructionStatus = instructionStatus;
 		
 		this.addReservationStation = addReservationStation;
 		this.mulReservationStation = mulReservationStation;
-		this.loadBuffers = loadBuffers;
-		this.storeBuffers = storeBuffers;
+		this.memoryUnit = memoryUnit;
 	}
 	
-	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
-		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers, threadIdx);
+	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, MemoryUnit memoryUnit, int threadIdx) {
+		this(instructionStatus, addReservationStation, mulReservationStation, memoryUnit, threadIdx);
 		int addr = initAddr;
 		Instruction inst;
 		int i=0;
@@ -54,8 +56,8 @@ public class InstructionQueue {
 		} while (!inst.getOpcode().equals(Opcode.HALT));
 	}
 	
-	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, LoadBuffers loadBuffers, StoreBuffers storeBuffers, int threadIdx) {
-		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers, threadIdx);
+	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, MemoryUnit memoryUnit, int threadIdx) {
+		this(instructionStatus, addReservationStation, mulReservationStation, memoryUnit, threadIdx);
 		this.instructions = instructions;
 	}
 	
@@ -63,6 +65,7 @@ public class InstructionQueue {
 		return this.instructions.isEmpty();
 	}
 	
+	@Override
 	public void tick() {
 		for (int i=0; i<ISSUES_PER_CYCLE; i++) {
 			if (this.instructions.isEmpty()) {
@@ -82,10 +85,8 @@ public class InstructionQueue {
 				target = this.mulReservationStation;
 				break;
 			case LD: 
-				target = this.loadBuffers;
-				break;
 			case ST:
-				target = this.storeBuffers;
+				target = this.memoryUnit;
 				break;
 			case NOP:
 			case HALT:
@@ -100,6 +101,7 @@ public class InstructionQueue {
 				break;
 			} else {
 				this.instructions.remove(0);
+				this.instructionStatus.add(instruction);
 			}
 		}
 	}

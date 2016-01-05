@@ -2,10 +2,7 @@ package state;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 
-import state.CDB.CdbTrans;
 import state.Registers.Register;
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl.InstructionR;
@@ -15,22 +12,16 @@ public class ReservationStation implements AcceptsInstructions {
 	private final Registers[] regs;
 	private final InstructionStatus[] instructionStatus;
 	public final String name;
-	private final CDB cdb;
 	
 	private Station[] stations;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
 	private List<Integer> stationsAge = new LinkedList<Integer>();
-	private LinkedList<CdbTrans> pendingCdbTrans = new LinkedList<CdbTrans>();
 	
 	public ReservationStation(String name, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
-		if (regs.length != 2) {
-			throw new IllegalArgumentException("expectes 2 register files but got: "+regs.length);
-		}
 		this.name = name;
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
-		this.cdb = cdb;
 		
 		this.stations = new Station[numStations];
 		for (int i=0; i<stations.length; i++) {
@@ -41,35 +32,32 @@ public class ReservationStation implements AcceptsInstructions {
 	}
 	
 	@Override
-	public boolean acceptInstruction(Instruction instruction) {
-		InstructionR instR = (InstructionR) instruction;
-		
-		for (Station station: this.stations) {
-			if (station.state == EntryState.IDLE) {
-				station.set(instR);
-				regs[instR.getThreadIdx()].get(instR.getDst()).set(station.cdbId);
-				// update station age
-				this.stationsAge.add(station.stationIdx);
-				
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	@Override
 	public boolean isEmpty() {
-		for (Station station: this.stations) {
-			if (station.state != EntryState.IDLE) {
+		for (Buffer station: this.stations) {
+			if (station.state != BufferState.IDLE) {
 				return false;
 			}
 		}
 		return true;
 	}
 	
+	@Override
+	public boolean acceptInstruction(Instruction instruction) {
+		for (Station station: this.stations) {
+			if (station.acceptInstruction(instruction)) {
+				this.stationsAge.add(station.idx);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
 	public void tick() {
-		for (int i=0; i<this.stations.length; i++) {
-			this.stations[i].tickPrepCdbTrans();
+		for (Station station: this.stations) {
+			if (station.prepCdbTrans()) {
+				this.stationsAge.remove(this.stationsAge.indexOf(station.idx));
+			}
 		}
 		
 		int[] tickingOrder = new int[this.stationsAge.size()];
@@ -79,56 +67,39 @@ public class ReservationStation implements AcceptsInstructions {
 			tickingOrder[i++] = stationIdx;
 		}
 		}
+		
 		for (int i=0; i<tickingOrder.length; i++) {
-			this.stations[tickingOrder[i]].tickReservationStation();
+			this.stations[tickingOrder[i]].tick();
 		}
-		while (!this.pendingCdbTrans.isEmpty()) {
-			this.cdb.notifyObservers(this.pendingCdbTrans.pop());
+		
+		for (Station station: this.stations) {
+			station.sendPendingCdbTrans();
 		}
 		
 	}
 	
-	private static enum EntryState {
-		IDLE, WAITING, READY, EXECUTING;
-	}
-	
-	private class Station implements Observer {
+	private class Station extends Buffer {
 		
-		private final int delay;
-		private final CdbId cdbId;
-		private final CDB cdb;
-		
-		private final int stationIdx;
-		
-		EntryState state = EntryState.IDLE;
-		InstructionR inst = null;
 		Float Vj = null;
 		Float Vk = null;
 		CdbId Qj = null;
 		CdbId Qk = null;
-		Integer time = null;
 		
 		public Station(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
-			this.stationIdx = idx;
-			this.cdb = cdb;
-			this.cdb.addObserver(this);
-			this.delay = delay;
-			this.cdbId = new CdbId(cdbType, idx);
+			super(idx, cdbType, delay, cdb);
 		}
-		
-		private void reset() {
-			this.state = EntryState.IDLE;
-			this.inst = null;
+
+		@Override
+		protected void reset() {
+			super.reset();
 			this.Vj = null;
 			this.Vk = null;
 			this.Qj = null;
 			this.Qk = null;
-			this.time = null;
 		}
-
-		public void set(InstructionR inst) {
-			this.inst = inst;
-			
+		
+		@Override
+		public void set(Instruction inst) {
 			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc0());
 			switch (regJ.getState()) {
 			case VAL:
@@ -156,27 +127,47 @@ public class ReservationStation implements AcceptsInstructions {
 			default:
 				throw new IllegalArgumentException("unknown register state: "+regK.getState());
 			}
-			this.state = (Qj!=null || Qk!=null) ? EntryState.WAITING : EntryState.READY;
-			instructionStatus[this.inst.getThreadIdx()].add(this.inst);
+			
+			regs[inst.getThreadIdx()].get(inst.getDst()).set(this.cdbId);
+			
+			this.state = (Qj!=null || Qk!=null) ? BufferState.WAITING : BufferState.READY;
 		}
 		
-		public void tickPrepCdbTrans() {
-			if (this.state == EntryState.EXECUTING && this.time==1) {
-				numFunctionalUnits++;
-				pendingCdbTrans.add(new CdbTrans(this.cdbId, inst.calc(this.Vj, this.Vk)));
-				instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
-				this.reset();
-				stationsAge.remove(stationsAge.indexOf(this.stationIdx));
+		@Override
+		protected void incomingCdbTrans(CdbTrans cdbTrans) {
+			if (this.state != BufferState.WAITING) {
+				return;
+			}
+			if (cdbTrans.getCdbId().equals(this.Qj)) {
+				this.Qj = null;
+				this.Vj = cdbTrans.getValue();
+			}
+			if (cdbTrans.getCdbId().equals(this.Qk)) {
+				this.Qk = null;
+				this.Vk = cdbTrans.getValue();
+			}
+			if (this.Vj!=null && this.Vk!=null) {
+				this.state = BufferState.READY;
 			}
 		}
+			
+		@Override 
+		protected CdbTrans generateCdbTrans() {
+			if (this.state == BufferState.EXECUTING && this.time==1) {
+				numFunctionalUnits++;
+				return new CdbTrans(this.cdbId, ((InstructionR) inst).calc(this.Vj, this.Vk), inst);
+			}
+			return null;
+		}
 
-		public void tickReservationStation() {
+		@Override 
+		public void tick() {
 			switch (this.state) {
 			case IDLE:
 				break;
 			case WAITING:
 				if (this.Vj!=null && this.Vk!=null) {
-					this.state = EntryState.READY;
+					this.state = BufferState.READY;
 				}
 				break;
 			case READY:
@@ -184,7 +175,7 @@ public class ReservationStation implements AcceptsInstructions {
 					numFunctionalUnits--;
 					this.time = this.delay;
 					instructionStatus[this.inst.getThreadIdx()].setExecComp(this.inst);
-					this.state = EntryState.EXECUTING;
+					this.state = BufferState.EXECUTING;
 				}
 				break;
 			case EXECUTING:
@@ -196,31 +187,12 @@ public class ReservationStation implements AcceptsInstructions {
 		}
 
 		@Override
-		public void update(Observable obs, Object data) {
-			if (this.state != EntryState.WAITING) {
-				return;
-			}
-			CdbTrans cdbTrans = (CdbTrans) data;
-			if (cdbTrans.getCdbId().equals(this.Qj)) {
-				this.Qj = null;
-				this.Vj = cdbTrans.getValue();
-			}
-			if (cdbTrans.getCdbId().equals(this.Qk)) {
-				this.Qk = null;
-				this.Vk = cdbTrans.getValue();
-			}
-			if (this.Vj!=null && this.Vk!=null) {
-				this.state = EntryState.READY;
-			}
-		}
-
-		@Override
 		public String toString() {
-			return "Station [stationIdx=" + stationIdx + ", state=" + state + ", inst=" + inst + ", Vj=" + Vj
+			return "Station [stationIdx=" + idx + ", state=" + state + ", inst=" + inst + ", Vj=" + Vj
 					+ ", Vk=" + Vk + ", Qj=" + Qj + ", Qk=" + Qk + ", time="
 					+ time + "]";
 		}
-		
+
 	}
 
 }

@@ -2,7 +2,7 @@ package state;
 
 public class CdbId {
 	public static enum Type {
-		MEM, ADD, MUL
+		ADD, MUL, LD
 	}
 
 	private final Type type;
