@@ -31,7 +31,7 @@ public class InstructionStatus {
 			if (issueCycle > lastCycle) {
 				lastCycle = issueCycle;
 			}
-			System.out.println(issueCycle+": issued "+instruction);
+			reportEvent(issueCycle, "issue", instruction);
 		}
 		public void setExecComp(int cycle) {
 			if (this.execCompSet) {
@@ -41,7 +41,7 @@ public class InstructionStatus {
 			if (cycle > lastCycle) {
 				lastCycle = cycle;
 			}
-			System.out.println(cycle+": execComp "+instruction);
+			reportEvent(cycle, "exec", instruction);
 		}
 		public void setWriteResult(int cycle) {
 			if (this.writeResultSet) {
@@ -51,11 +51,22 @@ public class InstructionStatus {
 			if (cycle > lastCycle) {
 				lastCycle = cycle;
 			}
-			System.out.println(cycle+": writeResult "+instruction);
+			reportEvent(cycle, "cdb", instruction);
 		}
 		
 		
+		
+		
 	}
+	
+	private static void reportEvent(int cycle, String eventName, Instruction inst) {
+		String str = String.format("cycle: %3d, %s, %s", cycle, padRight(eventName, 5), inst.toString());
+		System.out.println(str);
+	}
+	
+	private static String padRight(String s, int n) {
+	    return String.format("%1$-" + n + "s", s);
+	  }
 	
 	public void add(Instruction instruction) {
 		this.instructionCounter++;

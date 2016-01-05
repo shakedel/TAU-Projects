@@ -36,8 +36,8 @@ public class Main {
 		Memory memory = new Memory(1<<16, memInFile);
 		Registers[] regs = {new Registers(cdb), new Registers(cdb)};
 		InstructionStatus[] instructionStatus = {new InstructionStatus(), new InstructionStatus()};
-		ReservationStation addReservationStation = new ReservationStation(regs, instructionStatus, cdb, CdbId.Type.ADD, Props.get().getAddDelay(), Props.get().getNumAddReservations(), Props.get().getNumOfAdds());
-		ReservationStation mulReservationStation = new ReservationStation(regs, instructionStatus, cdb, CdbId.Type.MUL, Props.get().getMulDelay(), Props.get().getNumMulReservations(), Props.get().getNumOfMuls());
+		ReservationStation addReservationStation = new ReservationStation("add", regs, instructionStatus, cdb, CdbId.Type.ADD, Props.get().getAddDelay(), Props.get().getNumAddReservations(), Props.get().getNumOfAdds());
+		ReservationStation mulReservationStation = new ReservationStation("mul", regs, instructionStatus, cdb, CdbId.Type.MUL, Props.get().getMulDelay(), Props.get().getNumMulReservations(), Props.get().getNumOfMuls());
 		
 		StoreBuffers storeBuffers = new StoreBuffers(memory, regs, instructionStatus, cdb, Props.get().getMemDelay(), Props.get().getNumStoreBuffers(), 1); 
 		LoadBuffers loadBuffers = new LoadBuffers(memory, regs, instructionStatus, cdb, Props.get().getMemDelay(), Props.get().getNumLoadBuffers(), 1); 

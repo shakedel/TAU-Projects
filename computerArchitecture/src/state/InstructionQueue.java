@@ -46,8 +46,9 @@ public class InstructionQueue {
 		this(instructionStatus, addReservationStation, mulReservationStation, loadBuffers, storeBuffers, threadIdx);
 		int addr = initAddr;
 		Instruction inst;
+		int i=0;
 		do {
-			inst = InstructionImpl.parseInstruction(mem.read(addr), threadIdx);
+			inst = InstructionImpl.parseInstruction(mem.read(addr), threadIdx, i++);
 			instructions.add(inst);
 			addr+=2;
 		} while (!inst.getOpcode().equals(Opcode.HALT));

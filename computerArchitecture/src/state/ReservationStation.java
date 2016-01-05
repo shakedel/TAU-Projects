@@ -1,11 +1,12 @@
 package state;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
 import state.CDB.CdbTrans;
 import state.Registers.Register;
-import sun.awt.util.IdentityLinkedList;
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl.InstructionR;
 
@@ -13,24 +14,28 @@ public class ReservationStation implements AcceptsInstructions {
 
 	private final Registers[] regs;
 	private final InstructionStatus[] instructionStatus;
+	public final String name;
+	private final CDB cdb;
 	
 	private Station[] stations;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
-	private IdentityLinkedList<Station> stationsAge = new IdentityLinkedList<Station>();
+	private List<Integer> stationsAge = new LinkedList<Integer>();
+	private LinkedList<CdbTrans> pendingCdbTrans = new LinkedList<CdbTrans>();
 	
-	public ReservationStation(Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
+	public ReservationStation(String name, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
 		if (regs.length != 2) {
 			throw new IllegalArgumentException("expectes 2 register files but got: "+regs.length);
 		}
+		this.name = name;
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
+		this.cdb = cdb;
 		
 		this.stations = new Station[numStations];
 		for (int i=0; i<stations.length; i++) {
 			Station station = new Station(i, cdbType, delay, cdb);
 			stations[i] = station;
-			this.stationsAge.add(station);
 		}
 		this.numFunctionalUnits = numFunctionalUnits;
 	}
@@ -44,8 +49,7 @@ public class ReservationStation implements AcceptsInstructions {
 				station.set(instR);
 				regs[instR.getThreadIdx()].get(instR.getDst()).set(station.cdbId);
 				// update station age
-				this.stationsAge.remove(station);
-				this.stationsAge.push(station);
+				this.stationsAge.add(station.stationIdx);
 				
 				return true;
 			}
@@ -64,9 +68,24 @@ public class ReservationStation implements AcceptsInstructions {
 	}
 	
 	public void tick() {
-		for (Station station: this.stationsAge) {
-			station.tick();
+		for (int i=0; i<this.stations.length; i++) {
+			this.stations[i].tickPrepCdbTrans();
 		}
+		
+		int[] tickingOrder = new int[this.stationsAge.size()];
+		{
+		int i=0;
+		for (int stationIdx: this.stationsAge) {
+			tickingOrder[i++] = stationIdx;
+		}
+		}
+		for (int i=0; i<tickingOrder.length; i++) {
+			this.stations[tickingOrder[i]].tickReservationStation();
+		}
+		while (!this.pendingCdbTrans.isEmpty()) {
+			this.cdb.notifyObservers(this.pendingCdbTrans.pop());
+		}
+		
 	}
 	
 	private static enum EntryState {
@@ -79,24 +98,35 @@ public class ReservationStation implements AcceptsInstructions {
 		private final CdbId cdbId;
 		private final CDB cdb;
 		
+		private final int stationIdx;
+		
 		EntryState state = EntryState.IDLE;
-		InstructionR inst;
+		InstructionR inst = null;
 		Float Vj = null;
 		Float Vk = null;
 		CdbId Qj = null;
 		CdbId Qk = null;
-		
-		Integer time;
+		Integer time = null;
 		
 		public Station(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
+			this.stationIdx = idx;
 			this.cdb = cdb;
 			this.cdb.addObserver(this);
 			this.delay = delay;
 			this.cdbId = new CdbId(cdbType, idx);
 		}
 		
+		private void reset() {
+			this.state = EntryState.IDLE;
+			this.inst = null;
+			this.Vj = null;
+			this.Vk = null;
+			this.Qj = null;
+			this.Qk = null;
+			this.time = null;
+		}
+
 		public void set(InstructionR inst) {
-			this.time = delay;
 			this.inst = inst;
 			
 			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc0());
@@ -130,7 +160,17 @@ public class ReservationStation implements AcceptsInstructions {
 			instructionStatus[this.inst.getThreadIdx()].add(this.inst);
 		}
 		
-		public void tick() {
+		public void tickPrepCdbTrans() {
+			if (this.state == EntryState.EXECUTING && this.time==1) {
+				numFunctionalUnits++;
+				pendingCdbTrans.add(new CdbTrans(this.cdbId, inst.calc(this.Vj, this.Vk)));
+				instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
+				this.reset();
+				stationsAge.remove(stationsAge.indexOf(this.stationIdx));
+			}
+		}
+
+		public void tickReservationStation() {
 			switch (this.state) {
 			case IDLE:
 				break;
@@ -142,17 +182,13 @@ public class ReservationStation implements AcceptsInstructions {
 			case READY:
 				if (numFunctionalUnits > 0) {
 					numFunctionalUnits--;
+					this.time = this.delay;
 					instructionStatus[this.inst.getThreadIdx()].setExecComp(this.inst);
 					this.state = EntryState.EXECUTING;
 				}
 				break;
 			case EXECUTING:
-				if (--this.time == 0) {
-					numFunctionalUnits++;
-					cdb.notifyObservers(new CdbTrans(this.cdbId, inst.calc(this.Vj, this.Vk)));
-					instructionStatus[inst.getThreadIdx()].setWriteResult(inst);
-					this.state = EntryState.IDLE;
-				}
+				this.time--;
 				break;
 			default: 
 				throw new IllegalArgumentException("unknown state: "+this.state);
@@ -173,7 +209,18 @@ public class ReservationStation implements AcceptsInstructions {
 				this.Qk = null;
 				this.Vk = cdbTrans.getValue();
 			}
+			if (this.Vj!=null && this.Vk!=null) {
+				this.state = EntryState.READY;
+			}
 		}
+
+		@Override
+		public String toString() {
+			return "Station [stationIdx=" + stationIdx + ", state=" + state + ", inst=" + inst + ", Vj=" + Vj
+					+ ", Vk=" + Vk + ", Qj=" + Qj + ", Qk=" + Qk + ", time="
+					+ time + "]";
+		}
+		
 	}
 
 }

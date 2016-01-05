@@ -25,18 +25,36 @@ public class Memory {
 			int i=0;
 			String line;
 			while ((line = br.readLine()) != null) {
-				line = line.trim();
 				this.rows[i++] = Integer.parseInt(line, 16);
 			}
 		}
 	}
 	
 	public void store(File f) throws IOException {
+		int lastNonZeroRowIdx = this.rows.length;
+		while (true) {
+			if (this.rows[--lastNonZeroRowIdx ] != 0) {
+				break;
+			}
+		}
+		
 		f.getParentFile().mkdirs();
+		
+		boolean firstLine = true;
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
-			for (int row: this.rows) {
-				bw.write(Integer.toHexString(row));
-				bw.newLine();
+			for (int i=0; i<=lastNonZeroRowIdx; i++) {
+				StringBuilder sb = new StringBuilder();
+				sb.append(Integer.toHexString(this.rows[i]));
+				while (sb.length() < 8) {
+				    sb.insert(0, '0'); // pad with leading zero if needed
+				}
+				String hex = sb.toString();
+				if (firstLine) {
+					firstLine = false;
+				} else {
+					bw.newLine();
+				}
+				bw.write(hex);
 			}
 		}
 	}

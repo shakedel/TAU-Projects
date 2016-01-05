@@ -42,10 +42,18 @@ public class Registers implements Observer {
 	
 	public void store(File f) throws IOException {
 		f.getParentFile().mkdirs();
+		
+		boolean isFirstLine = true;
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
 			for (Register reg: this.regs) {
-				bw.write(reg.toString());
-				bw.newLine();
+				if (isFirstLine) {
+					isFirstLine = false;
+				} else {
+					bw.newLine();
+				}
+				float val = reg.getVal();
+				String valStr = val == (int) val ? String.format("%d",(int)val) : Float.toString(val);
+				bw.write(valStr);
 			}
 		}
 	}

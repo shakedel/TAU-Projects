@@ -11,4 +11,5 @@ public interface Instruction {
 	String toString();
 	String toHex();
 	int getThreadIdx();
+	int getInstructionIdx();
 }
