@@ -2,16 +2,18 @@ package main;
 import java.io.File;
 import java.io.IOException;
 
-import mem.Memory;
+import peripherals.Clock;
+import peripherals.InstructionStatus;
+import peripherals.Memory;
+import peripherals.Registers;
+
+import cdb.CDB;
+import cdb.CdbId;
+
 import misc.Props;
-import state.CDB;
-import state.CdbId;
-import state.Clock;
-import state.InstructionQueue;
-import state.InstructionStatus;
-import state.MemoryUnit;
-import state.Registers;
-import state.ReservationStation;
+import state.impl.InstructionQueue;
+import state.impl.MemoryUnit;
+import state.impl.ReservationStation;
 
 
 public class Main {

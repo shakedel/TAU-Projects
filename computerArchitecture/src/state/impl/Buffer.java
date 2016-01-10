@@ -1,7 +1,13 @@
-package state;
+package state.impl;
 
 import java.util.Observable;
 import java.util.Observer;
+
+import state.AcceptsInstructions;
+
+import cdb.CDB;
+import cdb.CdbId;
+import cdb.CdbTrans;
 
 import data.instruction.Instruction;
 
@@ -57,7 +63,9 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 		if (trans == null) {
 			return false;
 		}
-		this.pendingCdbTrans = trans;
+		if (trans != CdbTrans.NO_TRANS) {
+			this.pendingCdbTrans = trans;
+		}
 		this.reset();
 		return true;
 	}

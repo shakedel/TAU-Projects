@@ -1,9 +1,19 @@
-package state;
+package state.impl;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import state.Registers.Register;
+import peripherals.InstructionStatus;
+import peripherals.Registers;
+import peripherals.Registers.Register;
+
+import state.AcceptsInstructions;
+
+
+import cdb.CDB;
+import cdb.CdbId;
+import cdb.CdbTrans;
+
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl.InstructionR;
 

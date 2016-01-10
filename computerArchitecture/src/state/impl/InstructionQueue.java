@@ -1,9 +1,14 @@
-package state;
+package state.impl;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import mem.Memory;
+import peripherals.InstructionStatus;
+import peripherals.Memory;
+
+import state.AcceptsInstructions;
+import state.Tickable;
+
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl;
 import data.opcode.Opcode;

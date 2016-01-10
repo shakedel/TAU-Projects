@@ -1,4 +1,4 @@
-package mem;
+package peripherals;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,7 +25,7 @@ public class Memory {
 			int i=0;
 			String line;
 			while ((line = br.readLine()) != null) {
-				this.rows[i++] = Integer.parseInt(line, 16);
+				this.rows[i++] = (int) Long.parseLong(line, 16);
 			}
 		}
 	}

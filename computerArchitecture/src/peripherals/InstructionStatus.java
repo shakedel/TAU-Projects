@@ -1,4 +1,4 @@
-package state;
+package peripherals;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
+
 
 import data.instruction.Instruction;
 

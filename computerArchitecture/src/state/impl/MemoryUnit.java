@@ -1,7 +1,13 @@
-package state;
+package state.impl;
 
-import mem.Memory;
-import state.Registers.Register;
+import peripherals.InstructionStatus;
+import peripherals.Memory;
+import peripherals.Registers;
+import peripherals.Registers.Register;
+import cdb.CDB;
+import cdb.CdbId;
+import cdb.CdbTrans;
+import state.AcceptsInstructions;
 import sun.awt.util.IdentityLinkedList;
 import data.instruction.Instruction;
 
@@ -10,19 +16,19 @@ public class MemoryUnit implements AcceptsInstructions {
 	private final Memory memory;
 	private final Registers[] regs;
 	private final InstructionStatus[] instructionStatus;
-	
+
 	private LoadBuffer[] loadBuffers;
 	private StoreBuffer[] storeBuffers;
 	private int numFunctionalUnits;
-	
+
 	// we tick() the oldest station first
 	IdentityLinkedList<Buffer> buffersAge = new IdentityLinkedList<Buffer>();
-	
+
 	public MemoryUnit(Memory memory, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, int delay, int numLoadBuffers, int numStoreBuffers, int numFunctionalUnits) {
 		this.memory = memory;
 		this.regs = regs;
 		this.instructionStatus = instructionStatus;
-		
+
 		this.loadBuffers = new LoadBuffer[numLoadBuffers];
 		for (int i=0; i<loadBuffers.length; i++) {
 			LoadBuffer buffer = new LoadBuffer(i, CdbId.Type.LD, delay, cdb);
@@ -37,7 +43,7 @@ public class MemoryUnit implements AcceptsInstructions {
 		}
 		this.numFunctionalUnits = numFunctionalUnits;
 	}
-	
+
 	@Override
 	public boolean isEmpty() {
 		for (Buffer buffer: this.loadBuffers) {
@@ -52,7 +58,7 @@ public class MemoryUnit implements AcceptsInstructions {
 		}
 		return true;
 	}
-	
+
 	@Override
 	public boolean acceptInstruction(Instruction instruction) {
 		Buffer[] target;
@@ -87,19 +93,19 @@ public class MemoryUnit implements AcceptsInstructions {
 				this.buffersAge.remove(buffer);
 			}
 		}
-		
+
 		for (Buffer buffer: this.buffersAge) {
 			buffer.tick();
 		}
-		
+
 		for (Buffer buffer: this.loadBuffers) {
 			buffer.sendPendingCdbTrans();
 		}
-		
+
 	}
-	
+
 	private class LoadBuffer extends Buffer {
-		
+
 		public LoadBuffer(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
 			super(idx, cdbType, delay, cdb);
 		}
@@ -108,23 +114,23 @@ public class MemoryUnit implements AcceptsInstructions {
 		protected void reset() {
 			super.reset();
 		}
-		
+
 		@Override
 		public void set(Instruction inst) {
 			regs[inst.getThreadIdx()].get(inst.getDst()).set(this.cdbId);
 			this.state = BufferState.READY;
 		}
-		
+
 		@Override
 		protected void incomingCdbTrans(CdbTrans cdbTrans) {
 			return;
 		}
-			
+
 		@Override 
 		protected CdbTrans generateCdbTrans() {
 			if (this.state == BufferState.EXECUTING && this.time==1) {
 				numFunctionalUnits++;
-				
+
 				int intVal = memory.read(inst.getImm());
 				float val = Float.intBitsToFloat(intVal);
 				return new CdbTrans(this.cdbId, val, inst);
@@ -163,11 +169,11 @@ public class MemoryUnit implements AcceptsInstructions {
 
 	}
 
-private class StoreBuffer extends Buffer {
-		
+	private class StoreBuffer extends Buffer {
+
 		Float Vj = null;
 		CdbId Qj = null;
-		
+
 		public StoreBuffer(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
 			super(idx, cdbType, delay, cdb);
 		}
@@ -178,10 +184,10 @@ private class StoreBuffer extends Buffer {
 			this.Vj = null;
 			this.Qj = null;
 		}
-		
+
 		@Override
 		public void set(Instruction inst) {
-			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc0());
+			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc1());
 			switch (regJ.getState()) {
 			case VAL:
 				this.Vj = regJ.getVal();
@@ -194,10 +200,10 @@ private class StoreBuffer extends Buffer {
 			default:
 				throw new IllegalArgumentException("unknown register state: "+regJ.getState());
 			}
-			
+
 			this.state = (Qj!=null) ? BufferState.WAITING : BufferState.READY;
 		}
-		
+
 		@Override
 		protected void incomingCdbTrans(CdbTrans cdbTrans) {
 			if (this.state != BufferState.WAITING) {
@@ -209,13 +215,14 @@ private class StoreBuffer extends Buffer {
 				this.state = BufferState.READY;
 			}
 		}
-			
+
 		@Override 
 		protected CdbTrans generateCdbTrans() {
 			if (this.state == BufferState.EXECUTING && this.time==1) {
 				numFunctionalUnits++;
 				int intVal = Float.floatToRawIntBits(this.Vj);
 				memory.write(inst.getImm(), intVal);
+				return CdbTrans.NO_TRANS;
 			}
 			return null;
 		}

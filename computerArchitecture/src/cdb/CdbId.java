@@ -1,4 +1,4 @@
-package state;
+package cdb;
 
 public class CdbId {
 	public static enum Type {

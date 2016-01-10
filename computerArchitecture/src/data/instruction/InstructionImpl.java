@@ -187,7 +187,7 @@ public class InstructionImpl implements Instruction {
 		
 		@Override
 		public String toString() {
-			return "F"+this.getDst()+ " = MEM["+this.getImm()+"]";
+			return super.toString()+", F"+this.getDst()+ " = MEM["+this.getImm()+"]";
 		}
 	
 	}
@@ -203,17 +203,17 @@ public class InstructionImpl implements Instruction {
 		
 		@Override
 		public Integer getSrc0() {
-			 throw new IllegalStateException("LD type instructions dont have src0 values");
+			 throw new IllegalStateException("ST type instructions dont have src0 values");
 		}
 		
 		@Override
 		public Integer getDst() {
-			throw new IllegalStateException("LD type instructions dont have dst values");
+			throw new IllegalStateException("ST type instructions dont have dst values");
 		}
 		
 		@Override
 		public String toString() {
-			return "MEM["+this.getImm()+"] = F"+this.getSrc1();
+			return super.toString()+", MEM["+this.getImm()+"] = F"+this.getSrc1();
 		}
 
 	}
