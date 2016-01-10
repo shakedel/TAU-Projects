@@ -1,6 +1,10 @@
-package state;
+package cdb;
 
 import java.util.Observable;
+
+import peripherals.InstructionStatus;
+
+
 
 public class CDB extends Observable {
 	

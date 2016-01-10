@@ -1,4 +1,4 @@
-package state;
+package peripherals;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -6,6 +6,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
+
+import cdb.CDB;
+import cdb.CdbId;
+import cdb.CdbTrans;
 
 
 public class Registers implements Observer {

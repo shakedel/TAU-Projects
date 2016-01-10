@@ -1,4 +1,4 @@
-package state;
+package peripherals;
 
 public class Clock {
 	private static int cycle = 0;

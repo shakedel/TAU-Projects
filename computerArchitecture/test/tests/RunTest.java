@@ -14,6 +14,7 @@ import junit.framework.Assert;
 import main.Main;
 
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.core.IsEqual;
 import org.junit.Test;
 
 public class RunTest {
@@ -33,6 +34,9 @@ public class RunTest {
 			}
 			
 			for (File dir: resourcesDir.listFiles()) {
+				if (!dir.getName().startsWith("test")) {
+					continue;
+				}
 				File outDir = new File(tempDir, dir.getName());
 				testDir(dir, outDir);
 			}
@@ -74,8 +78,8 @@ public class RunTest {
 	}
 	
 	private void compareFiles(File expected, File collected) throws IOException {
-		String expectedStr = FileUtils.readFileToString(expected, "utf-8");
-		String collectedStr = FileUtils.readFileToString(collected, "utf-8");
+		String expectedStr = FileUtils.readFileToString(expected, "utf-8").toLowerCase();
+		String collectedStr = FileUtils.readFileToString(collected, "utf-8").toLowerCase();
 		try {
 			Assert.assertEquals(collected.getName()+": expected differs from collected!", expectedStr, collectedStr); 
 		} catch (AssertionError e) {

@@ -1,8 +1,11 @@
-package state;
+package cdb;
 
 import data.instruction.Instruction;
 
 public class CdbTrans {
+	
+	public final static CdbTrans NO_TRANS = new CdbTrans(null, -1, null);
+	
 	private final CdbId cdbId;
 	private final float value;
 	private final Instruction inst;
