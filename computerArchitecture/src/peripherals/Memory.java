@@ -59,18 +59,28 @@ public class Memory {
 		}
 	}
 	
-	public int read(int rowIdx) {
+	private void checkAddress(int rowIdx) {
 		if (rowIdx<0 || rowIdx>=this.rows.length) {
 			throw new IllegalArgumentException("memory address overflow: "+rowIdx);
 		}
+	}
+	
+	public int readInt(int rowIdx) {
+		checkAddress(rowIdx);
 		return this.rows[rowIdx];
 	}
 	
-	public int write(int rowIdx, int data) {
-		if (rowIdx<0 || rowIdx>=this.rows.length) {
-			throw new IllegalArgumentException("memory address overflow: "+rowIdx);
-		}
-		return this.rows[rowIdx] = data;
+	public float readFloat(int rowIdx) {
+		checkAddress(rowIdx);
+		int intVal = this.rows[rowIdx];
+		float val = Float.intBitsToFloat(intVal);
+		return val;
+	}
+	
+	public int writeFloat(int rowIdx, float data) {
+		checkAddress(rowIdx);
+		int intVal = Float.floatToRawIntBits(data);
+		return this.rows[rowIdx] = intVal;
 	}
 	
 }

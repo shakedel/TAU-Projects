@@ -55,8 +55,7 @@ public class Registers implements Observer {
 					bw.newLine();
 				}
 				float val = reg.getVal();
-				String valStr = val == (int) val ? String.format("%d",(int)val) : Float.toString(val);
-				bw.write(valStr);
+				bw.write(Float.toString(val));
 			}
 		}
 	}

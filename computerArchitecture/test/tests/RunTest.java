@@ -14,7 +14,6 @@ import junit.framework.Assert;
 import main.Main;
 
 import org.apache.commons.io.FileUtils;
-import org.hamcrest.core.IsEqual;
 import org.junit.Test;
 
 public class RunTest {

@@ -1,14 +1,17 @@
 package state.impl;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import peripherals.InstructionStatus;
 import peripherals.Memory;
 import peripherals.Registers;
 import peripherals.Registers.Register;
+import state.AcceptsInstructions;
 import cdb.CDB;
 import cdb.CdbId;
+import cdb.CdbId.Type;
 import cdb.CdbTrans;
-import state.AcceptsInstructions;
-import sun.awt.util.IdentityLinkedList;
 import data.instruction.Instruction;
 
 public class MemoryUnit implements AcceptsInstructions {
@@ -22,7 +25,7 @@ public class MemoryUnit implements AcceptsInstructions {
 	private int numFunctionalUnits;
 
 	// we tick() the oldest station first
-	IdentityLinkedList<Buffer> buffersAge = new IdentityLinkedList<Buffer>();
+	List<Buffer> buffersAge = new LinkedList<Buffer>();
 
 	public MemoryUnit(Memory memory, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, int delay, int numLoadBuffers, int numStoreBuffers, int numFunctionalUnits) {
 		this.memory = memory;
@@ -33,13 +36,11 @@ public class MemoryUnit implements AcceptsInstructions {
 		for (int i=0; i<loadBuffers.length; i++) {
 			LoadBuffer buffer = new LoadBuffer(i, CdbId.Type.LD, delay, cdb);
 			loadBuffers[i] = buffer;
-			this.buffersAge.add(buffer);
 		}
 		this.storeBuffers = new StoreBuffer[numStoreBuffers];
 		for (int i=0; i<storeBuffers.length; i++) {
 			StoreBuffer buffer = new StoreBuffer(i, null, delay, cdb);
 			storeBuffers[i] = buffer;
-			this.buffersAge.add(buffer);
 		}
 		this.numFunctionalUnits = numFunctionalUnits;
 	}
@@ -85,15 +86,19 @@ public class MemoryUnit implements AcceptsInstructions {
 	public void tick() {
 		for (Buffer buffer: this.loadBuffers) {
 			if (buffer.prepCdbTrans()) {
-				this.buffersAge.remove(buffer);
+				if (!this.buffersAge.remove(buffer)) {
+					throw new IllegalStateException();
+				}
 			}
 		}
 		for (Buffer buffer: this.storeBuffers) {
 			if (buffer.prepCdbTrans()) {
-				this.buffersAge.remove(buffer);
+				if (!this.buffersAge.remove(buffer)) {
+					throw new IllegalStateException();
+				}
 			}
 		}
-
+		
 		for (Buffer buffer: this.buffersAge) {
 			buffer.tick();
 		}
@@ -103,11 +108,52 @@ public class MemoryUnit implements AcceptsInstructions {
 		}
 
 	}
+	
+	private static enum MemoryBufferType {
+		LD, ST;
+	}
+	
+	private abstract class MemoryBuffer extends Buffer {
 
-	private class LoadBuffer extends Buffer {
+		private final MemoryBufferType type;
+		
+		public MemoryBuffer(MemoryBufferType type, int idx, Type cdbType, int delay, CDB cdb) {
+			super(idx, cdbType, delay, cdb);
+			this.type = type;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (!super.equals(obj)) {
+				return false;
+			}
+			if (!(obj instanceof MemoryBuffer)) {
+				return false;
+			}
+			MemoryBuffer other = (MemoryBuffer) obj;
+			if (!getOuterType().equals(other.getOuterType())) {
+				return false;
+			}
+			if (type != other.type) {
+				return false;
+			}
+			return true;
+		}
+
+		private MemoryUnit getOuterType() {
+			return MemoryUnit.this;
+		}
+
+		
+	}
+
+	private class LoadBuffer extends MemoryBuffer {
 
 		public LoadBuffer(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
-			super(idx, cdbType, delay, cdb);
+			super(MemoryBufferType.LD, idx, cdbType, delay, cdb);
 		}
 
 		@Override
@@ -131,8 +177,7 @@ public class MemoryUnit implements AcceptsInstructions {
 			if (this.state == BufferState.EXECUTING && this.time==1) {
 				numFunctionalUnits++;
 
-				int intVal = memory.read(inst.getImm());
-				float val = Float.intBitsToFloat(intVal);
+				float val = memory.readFloat(inst.getImm());
 				return new CdbTrans(this.cdbId, val, inst);
 			}
 			return null;
@@ -169,13 +214,13 @@ public class MemoryUnit implements AcceptsInstructions {
 
 	}
 
-	private class StoreBuffer extends Buffer {
+	private class StoreBuffer extends MemoryBuffer {
 
 		Float Vj = null;
 		CdbId Qj = null;
 
 		public StoreBuffer(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
-			super(idx, cdbType, delay, cdb);
+			super(MemoryBufferType.ST, idx, cdbType, delay, cdb);
 		}
 
 		@Override
@@ -220,8 +265,7 @@ public class MemoryUnit implements AcceptsInstructions {
 		protected CdbTrans generateCdbTrans() {
 			if (this.state == BufferState.EXECUTING && this.time==1) {
 				numFunctionalUnits++;
-				int intVal = Float.floatToRawIntBits(this.Vj);
-				memory.write(inst.getImm(), intVal);
+				memory.writeFloat(inst.getImm(), this.Vj);
 				return CdbTrans.NO_TRANS;
 			}
 			return null;

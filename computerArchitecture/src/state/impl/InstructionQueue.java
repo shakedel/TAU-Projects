@@ -55,7 +55,7 @@ public class InstructionQueue implements Tickable {
 		Instruction inst;
 		int i=0;
 		do {
-			inst = InstructionImpl.parseInstruction(mem.read(addr), threadIdx, i++);
+			inst = InstructionImpl.parseInstruction(mem.readInt(addr), threadIdx, i++);
 			instructions.add(inst);
 			addr+=2;
 		} while (!inst.getOpcode().equals(Opcode.HALT));

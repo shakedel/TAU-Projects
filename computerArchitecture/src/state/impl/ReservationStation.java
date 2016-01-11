@@ -26,7 +26,7 @@ public class ReservationStation implements AcceptsInstructions {
 	private Station[] stations;
 	private int numFunctionalUnits;
 	// we tick() the oldest station first
-	private List<Integer> stationsAge = new LinkedList<Integer>();
+	private List<Station> stationsAge = new LinkedList<Station>();
 	
 	public ReservationStation(String name, Registers[] regs, InstructionStatus[] instructionStatus, CDB cdb, CdbId.Type cdbType, int delay, int numStations, int numFunctionalUnits) {
 		this.name = name;
@@ -55,7 +55,7 @@ public class ReservationStation implements AcceptsInstructions {
 	public boolean acceptInstruction(Instruction instruction) {
 		for (Station station: this.stations) {
 			if (station.acceptInstruction(instruction)) {
-				this.stationsAge.add(station.idx);
+				this.stationsAge.add(station);
 				return true;
 			}
 		}
@@ -66,20 +66,12 @@ public class ReservationStation implements AcceptsInstructions {
 	public void tick() {
 		for (Station station: this.stations) {
 			if (station.prepCdbTrans()) {
-				this.stationsAge.remove(this.stationsAge.indexOf(station.idx));
+				this.stationsAge.remove(station);
 			}
 		}
 		
-		int[] tickingOrder = new int[this.stationsAge.size()];
-		{
-		int i=0;
-		for (int stationIdx: this.stationsAge) {
-			tickingOrder[i++] = stationIdx;
-		}
-		}
-		
-		for (int i=0; i<tickingOrder.length; i++) {
-			this.stations[tickingOrder[i]].tick();
+		for (Station station: stationsAge) {
+			station.tick();
 		}
 		
 		for (Station station: this.stations) {

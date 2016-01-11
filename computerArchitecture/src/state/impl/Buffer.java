@@ -83,5 +83,35 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 	public boolean isEmpty() {
 		return (this.state == BufferState.IDLE);
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((cdbId == null) ? 0 : cdbId.hashCode());
+		result = prime * result + idx;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof Buffer))
+			return false;
+		Buffer other = (Buffer) obj;
+		if (cdbId == null) {
+			if (other.cdbId != null)
+				return false;
+		} else if (!cdbId.equals(other.cdbId))
+			return false;
+		if (idx != other.idx)
+			return false;
+		return true;
+	}
+	
+	
 }
 	
