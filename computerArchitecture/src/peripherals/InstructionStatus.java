@@ -4,7 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,6 +14,13 @@ import java.util.List;
 import data.instruction.Instruction;
 
 public class InstructionStatus {
+	
+	private final Clock clock;
+
+	public InstructionStatus(Clock clock) {
+		this.clock = clock;
+	}
+	
 	IdentityHashMap<Instruction, Entry> table = new IdentityHashMap<Instruction, InstructionStatus.Entry>();
 	List<Instruction> instructionsAge = new LinkedList<Instruction>();
 	
@@ -71,7 +80,7 @@ public class InstructionStatus {
 	
 	public void add(Instruction instruction) {
 		this.instructionCounter++;
-		Entry entry = new Entry(instruction, Clock.get());
+		Entry entry = new Entry(instruction, this.clock.get());
 		if (this.table.put(instruction, entry) != null) {
 			throw new IllegalStateException();
 		}
@@ -79,26 +88,29 @@ public class InstructionStatus {
 	}
 	
 	public void setExecComp(Instruction inst) {
-		this.table.get(inst).setExecComp(Clock.get());
+		this.table.get(inst).setExecComp(this.clock.get());
 	}
 	
 	public void setWriteResult(Instruction inst) {
-		this.table.get(inst).setWriteResult(Clock.get());
+		this.table.get(inst).setWriteResult(this.clock.get());
 	}
 
 	public void store(File traceFile, File cpiFile) throws IOException {
 		traceFile.getParentFile().mkdirs();
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter(traceFile))) {
-			for (Instruction inst: this.instructionsAge) {
-				Entry entry = this.table.get(inst);
-				bw.write(inst.toHex()+" "+entry.issue+" "+entry.execComp+" "+entry.writeResult);
-				bw.newLine();
+		try (PrintStream ps = new PrintStream(traceFile)) {
+			for (Iterator<Instruction> it = this.instructionsAge.iterator(); it.hasNext();) {
+				Instruction currInst = it.next();
+				Entry entry = this.table.get(currInst);
+				ps.print(currInst.toHex()+" "+entry.issue+" "+entry.execComp+" "+entry.writeResult);
+			    if (it.hasNext()) {
+			        ps.println();
+			    }
 			}
 		}
 		
 		cpiFile.getParentFile().mkdirs();
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(cpiFile))) {
-			float cpi = ((float) this.lastCycle)/this.instructionCounter;
+			float cpi = ((float) this.lastCycle+1.0f)/this.instructionCounter;
 			bw.write(Float.toString(cpi));
 		}
 	}

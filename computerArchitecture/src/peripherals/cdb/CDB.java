@@ -1,4 +1,4 @@
-package cdb;
+package peripherals.cdb;
 
 import java.util.Observable;
 

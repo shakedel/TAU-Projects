@@ -7,29 +7,6 @@ import java.util.Properties;
 
 public class Props {
 	
-	private static Props inst = null;
-	
-	public static void set(int numOfAdds, int numOfMuls, int addDelay, int multDelay,
-			int memDelay, int numAddReservations, int numMulReservations,
-			int numMemLoadBuffers, int numMemStoreBuffers) {
-		inst = new Props(numOfAdds, numOfMuls, addDelay, multDelay, memDelay, numAddReservations, numMulReservations, numMemLoadBuffers, numMemStoreBuffers);
-	}
-	
-	public static void set(File f) {
-		try {
-			inst = new Props(f);
-		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
-	
-	public static Props get() {
-		if (inst == null) {
-			throw new IllegalStateException("Properties have not been set");
-		}
-		return inst;
-	}
-	
 	private Props(int numOfAdds, int numOfMuls, int addDelay, int multDelay,
 			int memDelay, int numAddReservations, int numMulReservations,
 			int numMemLoadBuffers, int numMemStoreBuffers) {
@@ -45,7 +22,7 @@ public class Props {
 		this.numMemStoreBuffers = numMemStoreBuffers;
 	}
 
-	private Props(File f) throws IOException {
+	public Props(File f) throws IOException {
 		Properties props = new Properties();
 		props.load(new FileInputStream(f));
 		

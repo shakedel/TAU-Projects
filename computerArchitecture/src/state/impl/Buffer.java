@@ -3,11 +3,12 @@ package state.impl;
 import java.util.Observable;
 import java.util.Observer;
 
+import peripherals.cdb.CDB;
+import peripherals.cdb.CdbId;
+import peripherals.cdb.CdbTrans;
+
 import state.AcceptsInstructions;
 
-import cdb.CDB;
-import cdb.CdbId;
-import cdb.CdbTrans;
 
 import data.instruction.Instruction;
 

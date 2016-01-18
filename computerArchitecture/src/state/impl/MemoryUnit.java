@@ -7,11 +7,11 @@ import peripherals.InstructionStatus;
 import peripherals.Memory;
 import peripherals.Registers;
 import peripherals.Registers.Register;
+import peripherals.cdb.CDB;
+import peripherals.cdb.CdbId;
+import peripherals.cdb.CdbTrans;
+import peripherals.cdb.CdbId.Type;
 import state.AcceptsInstructions;
-import cdb.CDB;
-import cdb.CdbId;
-import cdb.CdbId.Type;
-import cdb.CdbTrans;
 import data.instruction.Instruction;
 
 public class MemoryUnit implements AcceptsInstructions {

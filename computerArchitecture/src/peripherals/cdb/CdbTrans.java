@@ -1,4 +1,4 @@
-package cdb;
+package peripherals.cdb;
 
 import data.instruction.Instruction;
 

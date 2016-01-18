@@ -7,9 +7,10 @@ import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
 
-import cdb.CDB;
-import cdb.CdbId;
-import cdb.CdbTrans;
+import peripherals.cdb.CDB;
+import peripherals.cdb.CdbId;
+import peripherals.cdb.CdbTrans;
+
 
 
 public class Registers implements Observer {

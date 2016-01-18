@@ -6,9 +6,9 @@ import peripherals.Clock;
 import peripherals.InstructionStatus;
 import peripherals.Memory;
 import peripherals.Registers;
+import peripherals.cdb.CDB;
+import peripherals.cdb.CdbId;
 
-import cdb.CDB;
-import cdb.CdbId;
 
 import misc.Props;
 import state.impl.InstructionQueue;
@@ -30,23 +30,24 @@ public class Main {
 	
 	
 	public Main(File cfgFile, File memInFile, File memOutFile, File regOut0File, File trace0File, File cpi0File, File regOut1File, File trace1File, File cpi1File) throws IOException {
-		Props.set(cfgFile);
+		Props props = new Props(cfgFile);
+		Clock clock = new Clock();
 		
 		// init units
-		InstructionStatus[] instructionStatus = {new InstructionStatus(), new InstructionStatus()};
+		InstructionStatus[] instructionStatus = {new InstructionStatus(clock), new InstructionStatus(clock)};
 		CDB cdb = new CDB(instructionStatus);
 		Memory memory = new Memory(1<<16, memInFile);
 		Registers[] regs = {new Registers(cdb), new Registers(cdb)};
-		ReservationStation addReservationStation = new ReservationStation("add", regs, instructionStatus, cdb, CdbId.Type.ADD, Props.get().getAddDelay(), Props.get().getNumAddReservations(), Props.get().getNumOfAdds());
-		ReservationStation mulReservationStation = new ReservationStation("mul", regs, instructionStatus, cdb, CdbId.Type.MUL, Props.get().getMulDelay(), Props.get().getNumMulReservations(), Props.get().getNumOfMuls());
-		MemoryUnit memoryUnit = new MemoryUnit(memory, regs, instructionStatus, cdb, Props.get().getMemDelay(), Props.get().getNumLoadBuffers(), Props.get().getNumStoreBuffers(), 1);
+		ReservationStation addReservationStation = new ReservationStation("add", regs, instructionStatus, cdb, CdbId.Type.ADD, props.getAddDelay(), props.getNumAddReservations(), props.getNumOfAdds());
+		ReservationStation mulReservationStation = new ReservationStation("mul", regs, instructionStatus, cdb, CdbId.Type.MUL, props.getMulDelay(), props.getNumMulReservations(), props.getNumOfMuls());
+		MemoryUnit memoryUnit = new MemoryUnit(memory, regs, instructionStatus, cdb, props.getMemDelay(), props.getNumLoadBuffers(), props.getNumStoreBuffers(), 1);
 		
 		InstructionQueue instructiuonQueue0 = new InstructionQueue(memory, instructionStatus[0], 0, addReservationStation, mulReservationStation, memoryUnit, 0);
 		InstructionQueue instructiuonQueue1 = new InstructionQueue(memory, instructionStatus[1], 1, addReservationStation, mulReservationStation, memoryUnit, 1);
 		
 		// tick
 		while (!instructiuonQueue0.isEmpty() || !instructiuonQueue1.isEmpty() || !addReservationStation.isEmpty() || !mulReservationStation.isEmpty() || !memoryUnit.isEmpty()) {
-			Clock.tick();
+			clock.tick();
 			// first tick units
 			addReservationStation.tick();
 			mulReservationStation.tick();
@@ -56,6 +57,7 @@ public class Main {
 			instructiuonQueue0.tick();
 			instructiuonQueue1.tick();
 		}
+		//
 		
 		// write output files
 		memory.store(memOutFile);

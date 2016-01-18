@@ -1,4 +1,4 @@
-package cdb;
+package peripherals.cdb;
 
 public class CdbId {
 	public static enum Type {

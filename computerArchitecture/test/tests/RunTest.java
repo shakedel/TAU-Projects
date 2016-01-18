@@ -8,22 +8,28 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 import junit.framework.Assert;
 import main.Main;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class RunTest {
-	
-	@Test
-	public void testAllDirs() throws IOException {
-		DateFormat df = new SimpleDateFormat("HH-mm");
-		File tempDir = Files.createTempDirectory(Paths.get("work/temp"), "out_"+df.format(new Date())+"_").toFile();
-		
-		try {
+
+	@Parameters
+    public static Collection<Object[]> data() {
+		List<Object[]> dirs = new LinkedList<Object[]>();
 			URL url = RunTest.class.getResource("/resources/");
 			File resourcesDir;
 			try {
@@ -33,28 +39,47 @@ public class RunTest {
 			}
 			
 			for (File dir: resourcesDir.listFiles()) {
-				if (!dir.getName().startsWith("test")) {
+				if (!dir.isDirectory() || !dir.getName().startsWith("test")) {
 					continue;
 				}
-				File outDir = new File(tempDir, dir.getName());
-				testDir(dir, outDir);
+				dirs.add(new Object[]{dir});
 			}
-		} finally {
-			FileUtils.deleteDirectory(tempDir);
-		}
-	}
+			return dirs;
+    }
+    
+    @BeforeClass
+    public static void initGlobalResources() throws IOException {
+    	df = new SimpleDateFormat("HH-mm");
+    	tempDir = Files.createTempDirectory(Paths.get("work/temp"), "out_"+df.format(new Date())+"_").toFile();
+    }
+    
+    @AfterClass
+    public static void closeGlobalResources() throws IOException {
+    	FileUtils.deleteDirectory(tempDir);
+    }
+
+    private static DateFormat df;
+    private static File tempDir;
+    private final File inDir;
+    
+    public RunTest(File inDir) {
+    	this.inDir = inDir;
+    }
 	
-	public void testDir(File inDir, File outDir) throws IOException {
-		File cfgFile = new File(inDir, "cfg.txt");
-		File memInFile = new File(inDir, "memin.txt");
+	@Test
+	public void testDir() throws IOException {
+		File outDir = new File(tempDir, this.inDir.getName());
 		
-		File expectedMemOutFile = new File(inDir, "memout.txt");
-		File expectedRegOut0File = new File(inDir, "regout0.txt");
-		File expectedRegOut1File = new File(inDir, "regout1.txt");
-		File expectedTrace0File = new File(inDir, "trace0.txt");
-		File expectedTrace1File = new File(inDir, "trace1.txt");
-		File expectedCpi0File = new File(inDir, "cpi0.txt");
-		File expectedCpi1File = new File(inDir, "cpi1.txt");
+		File cfgFile = new File(this.inDir, "cfg.txt");
+		File memInFile = new File(this.inDir, "memin.txt");
+		
+		File expectedMemOutFile = new File(this.inDir, "memout.txt");
+		File expectedRegOut0File = new File(this.inDir, "regout0.txt");
+		File expectedRegOut1File = new File(this.inDir, "regout1.txt");
+		File expectedTrace0File = new File(this.inDir, "trace0.txt");
+		File expectedTrace1File = new File(this.inDir, "trace1.txt");
+		File expectedCpi0File = new File(this.inDir, "cpi0.txt");
+		File expectedCpi1File = new File(this.inDir, "cpi1.txt");
 		
 		File memOutFile = new File(outDir, "memout.txt");
 		File regOut0File = new File(outDir, "regout0.txt");
@@ -80,7 +105,7 @@ public class RunTest {
 		String expectedStr = FileUtils.readFileToString(expected, "utf-8").toLowerCase();
 		String collectedStr = FileUtils.readFileToString(collected, "utf-8").toLowerCase();
 		try {
-			Assert.assertEquals(collected.getName()+": expected differs from collected!", expectedStr, collectedStr); 
+			Assert.assertEquals(this.inDir.getName()+" "+collected.getName()+": expected differs from collected!", expectedStr, collectedStr); 
 		} catch (AssertionError e) {
 			throw e;
 		}

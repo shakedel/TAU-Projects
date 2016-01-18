@@ -1,13 +1,13 @@
 package peripherals;
 
 public class Clock {
-	private static int cycle = 0;
+	private int cycle = -1;
 	
-	public static int get() {
+	public int get() {
 		return cycle;
 	}
 	
-	public static void tick() {
+	public void tick() {
 		cycle++;
 	}
 
