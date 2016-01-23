@@ -38,17 +38,16 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 		this.time = null;
 	}
 
-	@Override 
+	@Override
 	public boolean acceptInstruction(Instruction instruction) {
-		if (this.state != BufferState.IDLE) {
-			return false;
+		if (this.state == BufferState.IDLE) {
+			this.inst = instruction;
+			this.set(inst);
+			return true;
 		}
-		this.inst = instruction;
-		this.set(inst);
-		return true;
+		return false;
 	}
-		
-
+	
 	public void update(Observable obs, Object data) {
 		if (this.state != BufferState.WAITING) {
 			return;

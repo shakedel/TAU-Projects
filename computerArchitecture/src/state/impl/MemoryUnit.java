@@ -75,15 +75,16 @@ public class MemoryUnit implements AcceptsInstructions {
 		}
 		for (Buffer buffer: target) {
 			if (buffer.acceptInstruction(instruction)) {
+				buffer.acceptInstruction(instruction);
 				this.buffersAge.add(buffer);
 				return true;
 			}
 		}
 		return false;
 	}
-
+	
 	@Override
-	public void tick() {
+	public void preTick() {
 		for (Buffer buffer: this.loadBuffers) {
 			if (buffer.prepCdbTrans()) {
 				if (!this.buffersAge.remove(buffer)) {
@@ -91,6 +92,10 @@ public class MemoryUnit implements AcceptsInstructions {
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void tick() {
 		for (Buffer buffer: this.storeBuffers) {
 			if (buffer.prepCdbTrans()) {
 				if (!this.buffersAge.remove(buffer)) {
@@ -103,10 +108,13 @@ public class MemoryUnit implements AcceptsInstructions {
 			buffer.tick();
 		}
 
+	}
+	
+	@Override
+	public void postTick() {
 		for (Buffer buffer: this.loadBuffers) {
 			buffer.sendPendingCdbTrans();
 		}
-
 	}
 	
 	private static enum MemoryBufferType {
@@ -163,7 +171,7 @@ public class MemoryUnit implements AcceptsInstructions {
 
 		@Override
 		public void set(Instruction inst) {
-			regs[inst.getThreadIdx()].get(inst.getDst()).set(this.cdbId);
+			regs[inst.getThreadIdx()].getReg(inst.getDst()).set(this.cdbId);
 			this.state = BufferState.READY;
 		}
 
@@ -183,6 +191,11 @@ public class MemoryUnit implements AcceptsInstructions {
 			return null;
 		}
 
+		@Override
+		public void preTick() {
+			// do nothing
+		}
+		
 		@Override 
 		public void tick() {
 			switch (this.state) {
@@ -204,6 +217,11 @@ public class MemoryUnit implements AcceptsInstructions {
 			default: 
 				throw new IllegalArgumentException("unknown state: "+this.state);
 			}
+		}
+		
+		@Override
+		public void postTick() {
+			// do nothing
 		}
 
 		@Override
@@ -232,7 +250,7 @@ public class MemoryUnit implements AcceptsInstructions {
 
 		@Override
 		public void set(Instruction inst) {
-			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc1());
+			Register regJ = regs[inst.getThreadIdx()].getReg(inst.getSrc1());
 			switch (regJ.getState()) {
 			case VAL:
 				this.Vj = regJ.getVal();
@@ -271,6 +289,11 @@ public class MemoryUnit implements AcceptsInstructions {
 			return null;
 		}
 
+		@Override
+		public void preTick() {
+			// do nothing
+		}
+		
 		@Override 
 		public void tick() {
 			switch (this.state) {
@@ -295,6 +318,11 @@ public class MemoryUnit implements AcceptsInstructions {
 			default: 
 				throw new IllegalArgumentException("unknown state: "+this.state);
 			}
+		}
+		
+		@Override
+		public void postTick() {
+			// do nothing
 		}
 
 		@Override

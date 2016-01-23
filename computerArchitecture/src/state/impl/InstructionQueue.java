@@ -5,10 +5,8 @@ import java.util.List;
 
 import peripherals.InstructionStatus;
 import peripherals.Memory;
-
 import state.AcceptsInstructions;
 import state.Tickable;
-
 import data.instruction.Instruction;
 import data.instruction.InstructionImpl;
 import data.opcode.Opcode;
@@ -35,8 +33,17 @@ public class InstructionQueue implements Tickable {
 			return true;
 		}
 
+		public void preTick() {
+			// do nothing
+		};
+		
 		@Override
 		public void tick() {
+			// do nothing
+		}
+		
+		@Override
+		public void postTick() {
 			// do nothing
 		}
 	};
@@ -71,7 +78,17 @@ public class InstructionQueue implements Tickable {
 	}
 	
 	@Override
+	public void preTick() {
+		// do nothing
+	}
+	
+	@Override
 	public void tick() {
+		// do nothing
+	}
+	
+	@Override
+	public void postTick() {
 		for (int i=0; i<ISSUES_PER_CYCLE; i++) {
 			if (this.instructions.isEmpty()) {
 				return;
@@ -100,15 +117,14 @@ public class InstructionQueue implements Tickable {
 			default:
 				throw new IllegalArgumentException("unknown opcode: "+instruction.getOpcode());
 			}
-			
-			boolean issued = target.acceptInstruction(instruction);
-			if (!issued) {
-				break;
-			} else {
-				this.instructions.remove(0);
+			if (target.acceptInstruction(instruction)) {
 				this.instructionStatus.add(instruction);
+				this.instructions.remove(0);
+			} else {
+				break;
 			}
 		}
+		
 	}
 	
 }

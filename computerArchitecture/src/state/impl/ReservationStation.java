@@ -63,21 +63,26 @@ public class ReservationStation implements AcceptsInstructions {
 	}
 
 	@Override
-	public void tick() {
+	public void preTick() {
 		for (Station station: this.stations) {
 			if (station.prepCdbTrans()) {
 				this.stationsAge.remove(station);
 			}
 		}
-		
+	}
+	
+	@Override
+	public void tick() {
 		for (Station station: stationsAge) {
 			station.tick();
 		}
-		
+	}
+	
+	@Override
+	public void postTick() {
 		for (Station station: this.stations) {
 			station.sendPendingCdbTrans();
 		}
-		
 	}
 	
 	private class Station extends Buffer {
@@ -102,7 +107,7 @@ public class ReservationStation implements AcceptsInstructions {
 		
 		@Override
 		public void set(Instruction inst) {
-			Register regJ = regs[inst.getThreadIdx()].get(inst.getSrc0());
+			Register regJ = regs[inst.getThreadIdx()].getReg(inst.getSrc0());
 			switch (regJ.getState()) {
 			case VAL:
 				this.Vj = regJ.getVal();
@@ -116,7 +121,7 @@ public class ReservationStation implements AcceptsInstructions {
 				throw new IllegalArgumentException("unknown register state: "+regJ.getState());
 			}
 			
-			Register regK = regs[inst.getThreadIdx()].get(inst.getSrc1());
+			Register regK = regs[inst.getThreadIdx()].getReg(inst.getSrc1());
 			switch (regK.getState()) {
 			case VAL:
 				this.Vk = regK.getVal();
@@ -130,7 +135,7 @@ public class ReservationStation implements AcceptsInstructions {
 				throw new IllegalArgumentException("unknown register state: "+regK.getState());
 			}
 			
-			regs[inst.getThreadIdx()].get(inst.getDst()).set(this.cdbId);
+			regs[inst.getThreadIdx()].getReg(inst.getDst()).set(this.cdbId);
 			
 			this.state = (Qj!=null || Qk!=null) ? BufferState.WAITING : BufferState.READY;
 		}
@@ -162,6 +167,11 @@ public class ReservationStation implements AcceptsInstructions {
 			return null;
 		}
 
+		@Override
+		public void preTick() {
+			// do nothing
+		}
+		
 		@Override 
 		public void tick() {
 			switch (this.state) {
@@ -186,6 +196,11 @@ public class ReservationStation implements AcceptsInstructions {
 			default: 
 				throw new IllegalArgumentException("unknown state: "+this.state);
 			}
+		}
+		
+		@Override
+		public void postTick() {
+			// do nothing
 		}
 
 		@Override

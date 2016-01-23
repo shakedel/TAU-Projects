@@ -37,7 +37,7 @@ public class Main {
 		InstructionStatus[] instructionStatus = {new InstructionStatus(clock), new InstructionStatus(clock)};
 		CDB cdb = new CDB(instructionStatus);
 		Memory memory = new Memory(1<<16, memInFile);
-		Registers[] regs = {new Registers(cdb), new Registers(cdb)};
+		Registers[] regs = {new Registers(0, cdb), new Registers(1, cdb)};
 		ReservationStation addReservationStation = new ReservationStation("add", regs, instructionStatus, cdb, CdbId.Type.ADD, props.getAddDelay(), props.getNumAddReservations(), props.getNumOfAdds());
 		ReservationStation mulReservationStation = new ReservationStation("mul", regs, instructionStatus, cdb, CdbId.Type.MUL, props.getMulDelay(), props.getNumMulReservations(), props.getNumOfMuls());
 		MemoryUnit memoryUnit = new MemoryUnit(memory, regs, instructionStatus, cdb, props.getMemDelay(), props.getNumLoadBuffers(), props.getNumStoreBuffers(), 1);
@@ -48,14 +48,27 @@ public class Main {
 		// tick
 		while (!instructiuonQueue0.isEmpty() || !instructiuonQueue1.isEmpty() || !addReservationStation.isEmpty() || !mulReservationStation.isEmpty() || !memoryUnit.isEmpty()) {
 			clock.tick();
-			// first tick units
+			
+			// preTick
+			addReservationStation.preTick();
+			mulReservationStation.preTick();
+			memoryUnit.preTick();
+			instructiuonQueue0.preTick();
+			instructiuonQueue1.preTick();
+
+			// tick
 			addReservationStation.tick();
 			mulReservationStation.tick();
 			memoryUnit.tick();
-			
-			// then tick queues
 			instructiuonQueue0.tick();
 			instructiuonQueue1.tick();
+			
+			// postTick
+			addReservationStation.postTick();
+			mulReservationStation.postTick();
+			memoryUnit.postTick();
+			instructiuonQueue0.postTick();
+			instructiuonQueue1.postTick();
 		}
 		//
 		

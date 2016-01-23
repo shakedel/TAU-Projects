@@ -20,4 +20,9 @@ public class CdbId {
 	public int getIdx() {
 		return idx;
 	}
+	
+	@Override
+	public String toString() {
+		return this.type+" "+this.idx;
+	}
 }

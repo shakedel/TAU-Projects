@@ -18,20 +18,25 @@ public class Registers implements Observer {
 	private static Register[] initRegisters() {
 		Register[] res = new Register[16];
 		for (int i=0; i<res.length; i++) {
-			res[i] = new Register(new Float(i));
+			res[i] = new Register(i, new Float(i));
 		}
 		return res;
 	}
 	
-	
+	private final int threadIdx;
 	private Register[] regs = initRegisters();
 	
-	public Registers(CDB cdb) {
+	public Registers(int threadIdx, CDB cdb) {
+		this.threadIdx = threadIdx;
 		cdb.addObserver(this);
 	}
 	
-	public Register get(int idx) {
+	public Register getReg(int idx) {
 		return this.regs[idx];
+	}
+	
+	public int getThreadIdx() {
+		return this.threadIdx;
 	}
 	
 	@Override
@@ -63,12 +68,14 @@ public class Registers implements Observer {
 	
 	
 	public static class Register {
+		private final int idx;
 		private Registers.State state;
 		private Float val = null;
 		private CdbId cdbId = null;
 		
-		private Register(Float val) {
+		private Register(int idx, Float val) {
 			state = Registers.State.VAL;
+			this.idx = idx;
 			this.val = val;
 		}
 		
@@ -92,6 +99,10 @@ public class Registers implements Observer {
 		
 		public CdbId getCdbId() {
 			return this.cdbId;
+		}
+		
+		public int getIdx() {
+			return this.idx;
 		}
 		
 	}
