@@ -1,0 +1,9 @@
+add_nr = 3
+mul_nr = 2
+add_delay = 3
+mul_delay = 6
+mem_delay = 2
+add_nr_reservation = 2
+mul_nr_reservation = 5
+mem_nr_load_buffers = 5
+mem_nr_store_buffers = 5
