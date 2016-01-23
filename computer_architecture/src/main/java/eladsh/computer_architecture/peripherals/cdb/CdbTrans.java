@@ -2,6 +2,9 @@ package eladsh.computer_architecture.peripherals.cdb;
 
 import eladsh.computer_architecture.data.instruction.Instruction;
 
+/**
+ * A data object for {@link Instruction} result put on {@link CDB}
+ */
 public class CdbTrans {
 	
 	public final static CdbTrans NO_TRANS = new CdbTrans(null, -1, null);

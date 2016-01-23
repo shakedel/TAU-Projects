@@ -5,17 +5,18 @@ import java.io.IOException;
 import eladsh.computer_architecture.peripherals.Clock;
 import eladsh.computer_architecture.peripherals.InstructionStatus;
 import eladsh.computer_architecture.peripherals.Memory;
-import eladsh.computer_architecture.peripherals.Registers;
+import eladsh.computer_architecture.peripherals.RegistersStatus;
 import eladsh.computer_architecture.peripherals.cdb.CDB;
 import eladsh.computer_architecture.peripherals.cdb.CdbId;
-
-
 import eladsh.computer_architecture.misc.Props;
-import eladsh.computer_architecture.state.impl.InstructionQueue;
-import eladsh.computer_architecture.state.impl.MemoryUnit;
-import eladsh.computer_architecture.state.impl.ReservationStation;
+import eladsh.computer_architecture.modules.impl.InstructionQueue;
+import eladsh.computer_architecture.modules.impl.MemoryUnit;
+import eladsh.computer_architecture.modules.impl.ReservationStation;
 
 
+/**
+ * Main class for the application
+ */
 public class App {
 	public static void main(String[] args) throws IOException {
 		if (args.length != 9) {
@@ -37,7 +38,7 @@ public class App {
 		InstructionStatus[] instructionStatus = {new InstructionStatus(clock), new InstructionStatus(clock)};
 		CDB cdb = new CDB(instructionStatus);
 		Memory memory = new Memory(1<<16, memInFile);
-		Registers[] regs = {new Registers(0, cdb), new Registers(1, cdb)};
+		RegistersStatus[] regs = {new RegistersStatus(0, cdb), new RegistersStatus(1, cdb)};
 		ReservationStation addReservationStation = new ReservationStation("add", regs, instructionStatus, cdb, CdbId.Type.ADD, props.getAddDelay(), props.getNumAddReservations(), props.getNumOfAdds());
 		ReservationStation mulReservationStation = new ReservationStation("mul", regs, instructionStatus, cdb, CdbId.Type.MUL, props.getMulDelay(), props.getNumMulReservations(), props.getNumOfMuls());
 		MemoryUnit memoryUnit = new MemoryUnit(memory, regs, instructionStatus, cdb, props.getMemDelay(), props.getNumLoadBuffers(), props.getNumStoreBuffers(), 1);

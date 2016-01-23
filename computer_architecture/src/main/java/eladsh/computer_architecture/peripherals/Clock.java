@@ -1,10 +1,16 @@
 package eladsh.computer_architecture.peripherals;
 
-import eladsh.computer_architecture.state.Tickable;
+import eladsh.computer_architecture.modules.Tickable;
 
+/**
+ * Simulates the hardware clock
+ */
 public class Clock implements Tickable {
 	private int cycle = -1;
 	
+	/**
+	 * @return current clock cycle
+	 */
 	public int get() {
 		return cycle;
 	}
@@ -14,6 +20,7 @@ public class Clock implements Tickable {
 		// do nothing
 	}
 	
+	@Override
 	public void tick() {
 		cycle++;
 	}

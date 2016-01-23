@@ -3,6 +3,11 @@ package eladsh.computer_architecture.data.opcode;
 import java.util.Map;
 import java.util.TreeMap;
 
+import eladsh.computer_architecture.data.instruction.Instruction;
+
+/**
+ * a list of {@link Instruction} opcodes
+ */
 public enum Opcode {
 	NOP(OpcodeType.EMPTY, 0),
 	LD(OpcodeType.LD, 1),
@@ -16,6 +21,10 @@ public enum Opcode {
 	
 	private static Map<Integer, Opcode> map = null;
 	
+	/**
+	 * @param code the integral code to be parsed
+	 * @return the corresponding {@link Opcode}
+	 */
 	public static Opcode parseOpcode(int code) {
 		if (map == null) {
 			map = new TreeMap<Integer, Opcode>();
@@ -41,6 +50,9 @@ public enum Opcode {
 		this.code = code;
 	}
 	
+	/**
+	 * @return the {@link OpcodeType} of this {@link Opcode}
+	 */
 	public OpcodeType getOpcodeType() {
 		return this.type;
 	}

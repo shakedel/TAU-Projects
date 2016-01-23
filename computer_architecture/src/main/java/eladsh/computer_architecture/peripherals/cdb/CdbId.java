@@ -1,5 +1,10 @@
 package eladsh.computer_architecture.peripherals.cdb;
 
+import eladsh.computer_architecture.data.instruction.Instruction;
+
+/**
+ * identifier of reservation station/memory buffers when {@link Instruction} result is put on {@link CDB}
+ */
 public class CdbId {
 	public static enum Type {
 		ADD, MUL, LD

@@ -1,14 +1,18 @@
-package eladsh.computer_architecture.state.impl;
+package eladsh.computer_architecture.modules.impl.buffers;
 
 import java.util.Observable;
 import java.util.Observer;
 
+import eladsh.computer_architecture.data.instruction.Instruction;
+import eladsh.computer_architecture.data.register.Register;
+import eladsh.computer_architecture.modules.AcceptsInstructions;
 import eladsh.computer_architecture.peripherals.cdb.CDB;
 import eladsh.computer_architecture.peripherals.cdb.CdbId;
 import eladsh.computer_architecture.peripherals.cdb.CdbTrans;
-import eladsh.computer_architecture.state.AcceptsInstructions;
-import eladsh.computer_architecture.data.instruction.Instruction;
 
+/**
+ * A base class for all buffers to inherit from
+ */
 public abstract class Buffer implements AcceptsInstructions, Observer {
 
 	protected final int delay;
@@ -21,6 +25,12 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 	protected Instruction inst = null;
 	private CdbTrans pendingCdbTrans = null;
 	
+	/**
+	 * @param idx index
+	 * @param cdbType cdb type
+	 * @param delay number of cycles a functional unit operates on this {@link Buffer}
+	 * @param cdb {@link CDB} to transmit results to
+	 */
 	public Buffer(int idx, CdbId.Type cdbType, int delay, CDB cdb) {
 		this.idx = idx;
 		this.cdb = cdb;
@@ -45,6 +55,13 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 		return false;
 	}
 	
+	public BufferState getState() {
+		return this.state;
+	}
+	
+	/**
+	 * if waiting for data on CDB, update value
+	 */
 	public void update(Observable obs, Object data) {
 		if (this.state != BufferState.WAITING) {
 			return;
@@ -52,9 +69,19 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 		incomingCdbTrans((CdbTrans) data);
 	}
 	
+	/**
+	 * @param inst {@link Instruction} to occupy this {@link Register}
+	 */
 	abstract protected void set(Instruction inst);
+	
+	/**
+	 * @param cdbTrans {@link CdbTrans} to handle
+	 */
 	abstract protected void incomingCdbTrans(CdbTrans cdbTrans);
 	
+	/**
+	 * @return <code>false</code> if the is no ready {@link CdbTrans}. Otherwise prepare it and return <code>true</code>.
+	 */
 	public boolean prepCdbTrans() {
 		CdbTrans trans = generateCdbTrans();
 		if (trans == null) {
@@ -67,8 +94,14 @@ public abstract class Buffer implements AcceptsInstructions, Observer {
 		return true;
 	}
 	
+	/**
+	 * @return a {@link CdbTrans} which is the result of the computation on the occupying {@link Instruction}
+	 */
 	abstract protected CdbTrans generateCdbTrans();
 	
+	/**
+	 * send the pending {@link CdbTrans} if one is prepared
+	 */
 	public void sendPendingCdbTrans() {
 		if (this.pendingCdbTrans != null) {
 			this.cdb.notifyObservers(this.pendingCdbTrans);

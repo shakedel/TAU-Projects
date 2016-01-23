@@ -5,8 +5,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+/**
+ * class holding the properties to be read from user configuration file
+ */
 public class Props {
 	
+	/**
+	 * @param f {@link File} to load properties from 
+	 * @throws IOException
+	 */
 	public Props(File f) throws IOException {
 		Properties props = new Properties();
 		props.load(new FileInputStream(f));

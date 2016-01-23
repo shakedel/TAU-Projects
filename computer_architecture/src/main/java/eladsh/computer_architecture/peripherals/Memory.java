@@ -10,15 +10,23 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
+/**
+ * data structure simulating the memory
+ */
 public class Memory {
-	int[] rows;
+	private int[] rows;
 	
+	/**
+	 * @param numRows number of rows in memory
+	 * @param f {@link File} to load from 
+	 * @throws IOException
+	 */
 	public Memory(int numRows, File f) throws IOException {
 		this.rows = new int[numRows];
 		load(f);
 	}
 	
-	void load(File f) throws IOException {
+	private void load(File f) throws IOException {
 		Arrays.fill(this.rows, 0);
 		
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), Charset.forName("UTF-8")))) {
@@ -30,6 +38,11 @@ public class Memory {
 		}
 	}
 	
+	/**
+	 * Store memory into disk
+	 * @param f {@link File} to store memory to
+	 * @throws IOException
+	 */
 	public void store(File f) throws IOException {
 		int lastNonZeroRowIdx = this.rows.length;
 		while (true) {
@@ -65,11 +78,21 @@ public class Memory {
 		}
 	}
 	
+	/**
+	 * Read integer from memory
+	 * @param rowIdx row index to read from
+	 * @return
+	 */
 	public int readInt(int rowIdx) {
 		checkAddress(rowIdx);
 		return this.rows[rowIdx];
 	}
 	
+	/**
+	 * Read float from memory
+	 * @param rowIdx row index to read from
+	 * @return
+	 */
 	public float readFloat(int rowIdx) {
 		checkAddress(rowIdx);
 		int intVal = this.rows[rowIdx];
@@ -77,6 +100,12 @@ public class Memory {
 		return val;
 	}
 	
+	/**
+	 * write float value to memory
+	 * @param rowIdx row index to write to
+	 * @param data word to write
+	 * @return
+	 */
 	public int writeFloat(int rowIdx, float data) {
 		checkAddress(rowIdx);
 		int intVal = Float.floatToRawIntBits(data);

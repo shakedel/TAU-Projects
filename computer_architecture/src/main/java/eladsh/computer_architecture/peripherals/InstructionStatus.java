@@ -13,6 +13,9 @@ import java.util.List;
 
 import eladsh.computer_architecture.data.instruction.Instruction;
 
+/**
+ * Data structure to hold the trace information about a thread's {@link Instruction}s 
+ */
 public class InstructionStatus {
 	
 	private final Clock clock;
@@ -21,8 +24,8 @@ public class InstructionStatus {
 		this.clock = clock;
 	}
 	
-	IdentityHashMap<Instruction, Entry> table = new IdentityHashMap<Instruction, InstructionStatus.Entry>();
-	List<Instruction> instructionsAge = new LinkedList<Instruction>();
+	private IdentityHashMap<Instruction, Entry> table = new IdentityHashMap<Instruction, InstructionStatus.Entry>();
+	private List<Instruction> instructionsAge = new LinkedList<Instruction>();
 	
 	int instructionCounter = 0;
 	int lastCycle = 0;
@@ -78,6 +81,9 @@ public class InstructionStatus {
 	    return String.format("%1$-" + n + "s", s);
 	  }
 	
+	/**
+	 * @param instruction to be added with issue at current cycle
+	 */
 	public void add(Instruction instruction) {
 		this.instructionCounter++;
 		Entry entry = new Entry(instruction, this.clock.get());
@@ -87,14 +93,26 @@ public class InstructionStatus {
 		this.instructionsAge.add(instruction);
 	}
 	
+	/**
+	 * @param inst to update the execution cycle to current cycle
+	 */
 	public void setExecComp(Instruction inst) {
 		this.table.get(inst).setExecComp(this.clock.get());
 	}
 	
+	/**
+	 * @param inst to update the cdb cycle to current cycle
+	 */
 	public void setWriteResult(Instruction inst) {
 		this.table.get(inst).setWriteResult(this.clock.get());
 	}
 
+	/**
+	 * Store data to disk
+	 * @param traceFile trace destination
+	 * @param cpiFile cpi destination
+	 * @throws IOException
+	 */
 	public void store(File traceFile, File cpiFile) throws IOException {
 		traceFile.getParentFile().mkdirs();
 		try (PrintStream ps = new PrintStream(traceFile)) {

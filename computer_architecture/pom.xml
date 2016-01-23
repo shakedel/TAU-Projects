@@ -87,7 +87,6 @@
 				<configuration>
 					<descriptorRefs>
 						<descriptorRef>src</descriptorRef>
-						<descriptorRef>test</descriptorRef>
 					</descriptorRefs>
 				</configuration>
 				<executions>
@@ -99,6 +98,14 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<configuration>
+				</configuration>
 			</plugin>
 
 		</plugins>

@@ -1,17 +1,20 @@
-package eladsh.computer_architecture.state.impl;
+package eladsh.computer_architecture.modules.impl;
 
 import java.util.LinkedList;
 import java.util.List;
 
 import eladsh.computer_architecture.peripherals.InstructionStatus;
 import eladsh.computer_architecture.peripherals.Memory;
-import eladsh.computer_architecture.state.AcceptsInstructions;
-import eladsh.computer_architecture.state.Tickable;
 import eladsh.computer_architecture.data.instruction.Instruction;
 import eladsh.computer_architecture.data.instruction.InstructionImpl;
 import eladsh.computer_architecture.data.opcode.Opcode;
+import eladsh.computer_architecture.modules.AcceptsInstructions;
+import eladsh.computer_architecture.modules.Tickable;
 
-public class InstructionQueue implements Tickable {
+/**
+ * module to simulate an instruction queue for a thread
+ */
+public class InstructionQueue implements Tickable, AcceptsInstructions {
 	private static final int ISSUES_PER_CYCLE = 2;
 	
 	private final InstructionStatus instructionStatus;
@@ -56,6 +59,15 @@ public class InstructionQueue implements Tickable {
 		this.memoryUnit = memoryUnit;
 	}
 	
+	/**
+	 * @param mem {@link Memory} to read/write from
+	 * @param instructionStatus {@link InstructionStatus} to update trace
+	 * @param initAddr initial address in memory to read {@link Instruction}s from
+	 * @param addReservationStation add/sub {@link ReservationStation}
+	 * @param mulReservationStation mul/div {@link ReservationStation}
+	 * @param memoryUnit {@link MemoryUnit}
+	 * @param threadIdx index of thread
+	 */
 	public InstructionQueue(Memory mem, InstructionStatus instructionStatus, int initAddr, ReservationStation addReservationStation, ReservationStation mulReservationStation, MemoryUnit memoryUnit, int threadIdx) {
 		this(instructionStatus, addReservationStation, mulReservationStation, memoryUnit, threadIdx);
 		int addr = initAddr;
@@ -68,11 +80,7 @@ public class InstructionQueue implements Tickable {
 		} while (!inst.getOpcode().equals(Opcode.HALT));
 	}
 	
-	public InstructionQueue(List<Instruction> instructions, InstructionStatus instructionStatus, ReservationStation addReservationStation, ReservationStation mulReservationStation, MemoryUnit memoryUnit, int threadIdx) {
-		this(instructionStatus, addReservationStation, mulReservationStation, memoryUnit, threadIdx);
-		this.instructions = instructions;
-	}
-	
+	@Override
 	public boolean isEmpty() {
 		return this.instructions.isEmpty();
 	}
@@ -125,6 +133,11 @@ public class InstructionQueue implements Tickable {
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean acceptInstruction(Instruction instruction) {
+		return false;
 	}
 	
 }

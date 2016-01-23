@@ -1,5 +1,8 @@
 package eladsh.computer_architecture.misc;
 
+/**
+ * Global constants
+ */
 public class Const {
 	public static int MAX_NIBBLE = 1<<4;
 	public static int MAX_BYTE = 1<<8;
